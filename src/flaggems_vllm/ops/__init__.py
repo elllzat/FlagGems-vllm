@@ -109,6 +109,7 @@ from flaggems_vllm.ops.fused_indexer_q_rope_quant import fused_indexer_q_rope_qu
 from flaggems_vllm.ops.fused_indexer_weight_scale import (
     fused_indexer_weight_scale,
 )
+from flaggems_vllm.ops.fused_kda_gate import fused_kda_gate
 from flaggems_vllm.ops.fused_marlin_moe import fused_marlin_moe
 from flaggems_vllm.ops.fused_moe import (
     dispatch_fused_moe_kernel,
@@ -355,6 +356,7 @@ __all__ = [
     "fused_indexer_q_rope_quant",
     "fused_indexer_weight_scale",
     "fused_inv_rope_fp8_quant",
+    "fused_kda_gate",
     "fused_kimi_k3_mla_kv_concat",
     "fused_marlin_moe",
     "fused_matmul_reduce_scatter",
