@@ -415,3 +415,32 @@ def test_repeated_metadata_reads_current_values(safe_gate):
         replacement = torch.randn_like(g)
         assert_output(replacement, A.clone(), 128, bias.clone(), safe_gate=safe_gate)
     torch.cuda.current_stream().wait_stream(stream)
+
+
+def test_cuda_graph_replay_reads_current_values():
+    g = torch.randn(8, 1024, device=flaggems_vllm.device, dtype=torch.bfloat16)
+    A = torch.randn(8, device=g.device)
+    bias = torch.randn(1024, device=g.device)
+    warmup_stream = torch.cuda.Stream()
+    warmup_stream.wait_stream(torch.cuda.current_stream())
+    with torch.cuda.stream(warmup_stream):
+        gems_fused_kda_gate(g, A, 128, bias, safe_gate=True)
+    torch.cuda.current_stream().wait_stream(warmup_stream)
+    graph = torch.cuda.CUDAGraph()
+    with torch.cuda.graph(graph):
+        out = gems_fused_kda_gate(g, A, 128, bias, safe_gate=True)
+    g.add_(0.25)
+    graph.replay()
+    ref = torch_fused_kda_gate(g, A, 128, bias, safe_gate=True)
+    utils.gems_assert_close(out, utils.to_reference(ref), torch.float32)
+
+
+@pytest.mark.skipif(torch.cuda.device_count() < 2, reason="requires two CUDA devices")
+def test_device_guard():
+    original = torch.cuda.current_device()
+    other = (original + 1) % torch.cuda.device_count()
+    g = torch.randn(8, 1024, device=f"cuda:{other}", dtype=torch.bfloat16)
+    A = torch.randn(8, device=g.device)
+    assert_output(g, A, 128, safe_gate=True)
+    assert_output(g, A, 128, safe_gate=True)
+    assert torch.cuda.current_device() == original
