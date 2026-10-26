@@ -14,6 +14,7 @@
 """GLM5Next KDA gate, with FP32 output and optional bounded sigmoid."""
 
 import os
+from collections import OrderedDict
 
 import torch
 import triton
@@ -70,6 +71,34 @@ def _fused_kda_gate_kernel(
     tl.store(Y + offsets, result, mask=mask)
 
 
+_launchers = OrderedDict()
+# LibEntry passes constexpr arguments to CompiledKernel on Triton 3.3-3.6.
+# Keep other versions on the normal LibEntry path.
+_cache_launch = (
+    (3, 3)
+    <= tuple(map(int, triton.__version__.split(".")[:2]))
+    <= (
+        3,
+        6,
+    )
+)
+
+
+def _metadata(tensor):
+    if tensor is None:
+        return None, None
+    if tensor.layout != torch.strided:
+        raise NotImplementedError("KDA gate requires strided tensors")
+    pointer = tensor.data_ptr()
+    return (
+        tensor.shape,
+        tensor.stride(),
+        tensor.dtype,
+        tensor.device,
+        pointer % 16,
+    ), pointer
+
+
 def fused_kda_gate(
     g: torch.Tensor,
     A: torch.Tensor,
@@ -89,6 +118,27 @@ def fused_kda_gate(
     means -5.0, and the lower bound has no effect on the softplus branch.
     Inputs must be contiguous CUDA floating tensors. This is forward only.
     """
+    g_meta, gp = _metadata(g)
+    a_meta, ap = _metadata(A)
+    bias_meta, bp = _metadata(g_bias)
+    key = (
+        g_meta,
+        a_meta,
+        bias_meta,
+        head_k_dim,
+        beta,
+        threshold,
+        safe_gate,
+        lower_bound,
+    )
+    cached = _launchers.get(key) if _cache_launch else None
+    if cached is not None:
+        shape, launch, constants = cached
+        output = torch.empty(shape, device=g.device, dtype=torch.float32)
+        with runtime.torch_device_fn.device(g.device):
+            launch(gp, ap, bp, output.data_ptr(), *constants)
+        return output
+
     if g.ndim < 1 or head_k_dim < 1 or A.numel() < 1:
         raise ValueError("KDA gate requires a nonempty head/key dimension")
     heads = A.numel()
@@ -121,7 +171,9 @@ def fused_kda_gate(
     if tokens == 0:
         return output
     with runtime.torch_device_fn.device(g.device):
-        _fused_kda_gate_kernel[lambda meta: (triton.cdiv(g.numel(), meta["BLOCK"]),)](
+        kernel, meta = _fused_kda_gate_kernel[
+            lambda meta: (triton.cdiv(g.numel(), meta["BLOCK"]),)
+        ](
             g,
             A,
             g_bias,
@@ -135,4 +187,21 @@ def fused_kda_gate(
             -5.0 if lower_bound is None else lower_bound,
             g_bias is not None,
         )
+        if _cache_launch:
+            grid = (triton.cdiv(g.numel(), meta["BLOCK"]), 1, 1)
+            constants = (
+                tokens,
+                heads,
+                head_k_dim,
+                beta,
+                threshold,
+                safe_gate,
+                -5.0 if lower_bound is None else lower_bound,
+                g_bias is not None,
+                meta["BLOCK"],
+            )
+            # Store validated metadata and compiled code, never input/output tensors.
+            _launchers[key] = (output.shape, kernel[grid], constants)
+            if len(_launchers) > 128:
+                _launchers.popitem(last=False)
     return output
