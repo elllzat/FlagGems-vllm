@@ -71,6 +71,54 @@ def _fused_kda_gate_kernel(
     tl.store(Y + offsets, result, mask=mask)
 
 
+@libentry()
+@libtuner(
+    configs=runtime.get_tuned_config("fused_kda_gate_tiled"),
+    key=["T", "H", "D", "HAS_BIAS", "SAFE_GATE"],
+    warmup=5,
+    rep=15,
+)
+@triton.jit
+def _fused_kda_gate_tiled_kernel(
+    G,
+    A,
+    BIAS,
+    Y,
+    T: tl.constexpr,
+    H: tl.constexpr,
+    D: tl.constexpr,
+    BETA: tl.constexpr,
+    THRESHOLD: tl.constexpr,
+    SAFE_GATE: tl.constexpr,
+    LOWER_BOUND: tl.constexpr,
+    HAS_BIAS: tl.constexpr,
+    BT: tl.constexpr,
+    BD: tl.constexpr,
+):
+    # Share one head's exp(A) and bias across multiple tokens. Neighboring
+    # programs visit neighboring heads before moving to the next token tile.
+    program = tl.program_id(0)
+    head = program % H
+    rows = (program // H).to(tl.int64) * BT + tl.arange(0, BT)
+    cols = tl.arange(0, BD)
+    offsets = rows[:, None] * (H * D) + head * D + cols[None, :]
+    mask = (rows[:, None] < T) & (cols[None, :] < D)
+    value = tl.load(G + offsets, mask=mask, other=0).to(tl.float32)
+    if HAS_BIAS:
+        bias = tl.load(BIAS + head * D + cols, mask=cols < D, other=0).to(tl.float32)
+        value += bias[None, :]
+    scale = tl.exp(tl.load(A + head).to(tl.float32))
+    if SAFE_GATE:
+        result = LOWER_BOUND / (1.0 + tl.exp(-(scale * value)))
+    else:
+        scaled = value * BETA
+        softplus = tl.where(
+            scaled > THRESHOLD, value, (1.0 / BETA) * log(1.0 + tl.exp(scaled))
+        )
+        result = -scale * softplus
+    tl.store(Y + offsets, result, mask=mask)
+
+
 _launchers = OrderedDict()
 # LibEntry passes constexpr arguments to CompiledKernel on Triton 3.3-3.6.
 # Keep other versions on the normal LibEntry path.
@@ -170,38 +218,33 @@ def fused_kda_gate(
     tokens = g.numel() // hidden
     if tokens == 0:
         return output
+    constants = (
+        tokens,
+        heads,
+        head_k_dim,
+        beta,
+        threshold,
+        safe_gate,
+        -5.0 if lower_bound is None else lower_bound,
+        g_bias is not None,
+    )
     with runtime.torch_device_fn.device(g.device):
-        kernel, meta = _fused_kda_gate_kernel[
-            lambda meta: (triton.cdiv(g.numel(), meta["BLOCK"]),)
-        ](
-            g,
-            A,
-            g_bias,
-            output,
-            tokens,
-            heads,
-            head_k_dim,
-            beta,
-            threshold,
-            safe_gate,
-            -5.0 if lower_bound is None else lower_bound,
-            g_bias is not None,
-        )
-        if _cache_launch:
+        if g.numel() >= 4 * 1024 * 1024:
+            bd = triton.next_power_of_2(head_k_dim)
+            kernel, meta = _fused_kda_gate_tiled_kernel[
+                lambda meta: (triton.cdiv(tokens, meta["BT"]) * heads,)
+            ](g, A, g_bias, output, *constants, BD=bd)
+            grid = (triton.cdiv(tokens, meta["BT"]) * heads, 1, 1)
+            launch_constants = (*constants, meta["BT"], bd)
+        else:
+            kernel, meta = _fused_kda_gate_kernel[
+                lambda meta: (triton.cdiv(g.numel(), meta["BLOCK"]),)
+            ](g, A, g_bias, output, *constants)
             grid = (triton.cdiv(g.numel(), meta["BLOCK"]), 1, 1)
-            constants = (
-                tokens,
-                heads,
-                head_k_dim,
-                beta,
-                threshold,
-                safe_gate,
-                -5.0 if lower_bound is None else lower_bound,
-                g_bias is not None,
-                meta["BLOCK"],
-            )
+            launch_constants = (*constants, meta["BLOCK"])
+        if _cache_launch:
             # Store validated metadata and compiled code, never input/output tensors.
-            _launchers[key] = (output.shape, kernel[grid], constants)
+            _launchers[key] = (output.shape, kernel[grid], launch_constants)
             if len(_launchers) > 128:
                 _launchers.popitem(last=False)
     return output
