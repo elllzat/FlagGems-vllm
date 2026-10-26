@@ -11,93 +11,63 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""fused_kda_gate kernel token from https://github.com/vllm-project/vllm/blob/v0.30.0/vllm/models/kimi_k3/nvidia/ops/third_party/kda/chunk.py"""
+"""GLM5Next KDA gate, with FP32 output and optional bounded sigmoid."""
 
 import os
 
-import logging
 import torch
 import triton
 import triton.language as tl
 
-from flaggems_vllm.runtime import device
+from flaggems_vllm import runtime
+from flaggems_vllm.utils import libentry, libtuner
 
 if os.environ.get("FLA_USE_FAST_OPS", "0") == "1":
-    import triton.language.extra.libdevice as tldevice
-    log = tldevice.fast_logf
+    from triton.language.extra.libdevice import fast_logf as log
 else:
     log = tl.log
 
 
-logger = logging.getLogger(__name__)
-is_amd = device.vendor_name == "hygon"
-BT_LIST_AUTOTUNE = [32, 64, 128]
-#BD_LIST_AUTOTUNE = [8, 16, 32, 64, 128]
-#BD_LIST_AUTOTUNE = [1, 2, 4]
-BD_LIST_AUTOTUNE = [8, 16, 32, 64, 128]
-NUM_WARPS_AUTOTUNE = [2, 4, 8, 16] if is_amd else [4, 8, 16, 32]
-
-#BT_LIST_AUTOTUNE = [128]
-#BD_LIST_AUTOTUNE = [64]
-#NUM_WARPS_AUTOTUNE = [8]
-#NUM_STAGES_AUTOTUNE = [3]
-
-@triton.autotune(
-    configs=[
-        triton.Config({"BT": bt, "BD": bd}, num_warps=nw, num_stages=1)
-        for bt in BT_LIST_AUTOTUNE
-        for bd in BD_LIST_AUTOTUNE
-        for nw in NUM_WARPS_AUTOTUNE
-    ],
-    key=["T_PAD", "H", "D", "USE_LOWER_BOUND"],
+@libentry()
+@libtuner(
+    configs=runtime.get_tuned_config("fused_kda_gate"),
+    key=["T", "H", "D", "HAS_BIAS", "SAFE_GATE"],
+    warmup=5,
+    rep=15,
 )
 @triton.jit
-def gems_kda_gate_fwd_kernel(
-    g,
+def _fused_kda_gate_kernel(
+    G,
     A,
-    y,
-    g_bias,
-    lower_bound,
-    beta: tl.constexpr,
-    threshold: tl.constexpr,
-    T,
-    T_PAD: tl.constexpr,
-    H,
+    BIAS,
+    Y,
+    T: tl.constexpr,
+    H: tl.constexpr,
     D: tl.constexpr,
-    BT: tl.constexpr,
-    BD: tl.constexpr,
+    BETA: tl.constexpr,
+    THRESHOLD: tl.constexpr,
+    SAFE_GATE: tl.constexpr,
+    LOWER_BOUND: tl.constexpr,
     HAS_BIAS: tl.constexpr,
-    USE_LOWER_BOUND: tl.constexpr,
+    BLOCK: tl.constexpr,
 ):
-    i_t, i_h, i_d = tl.program_id(0).to(tl.int64), tl.program_id(1), tl.program_id(2)
-    n_t = i_t * BT
-    o_t = n_t + tl.arange(0, BT)
-    o_d = i_d * BD + tl.arange(0, BD)
-    m_t = o_t < T
-    m_g = m_t[:, None] & (o_d[None, :] < D)
-    g_ptr = g + i_h * D + o_t[:, None] * (H * D) + o_d[None, :]
-    y_ptr = y + i_h * D + o_t[:, None] * (H * D) + o_d[None, :]
-
-    b_g = tl.load(g_ptr, mask=m_g, other=0.0).to(tl.float32)
-
+    offsets = tl.program_id(0).to(tl.int64) * BLOCK + tl.arange(0, BLOCK)
+    mask = offsets < T * H * D
+    columns = offsets % (H * D)
+    heads = columns // D
+    value = tl.load(G + offsets, mask=mask, other=0).to(tl.float32)
     if HAS_BIAS:
-        n_d = i_d * BD + tl.arange(0, BD)
-        bias_mask = n_d < D
-        b_bias = tl.load(g_bias + i_h * D + n_d, mask=bias_mask, other=0.0).to(
-            tl.float32
-        )
-        b_g = b_g + b_bias[None, :]
-
-    b_a = tl.exp(tl.load(A + i_h).to(tl.float32))
-    if USE_LOWER_BOUND:
-        b_y = lower_bound * tl.sigmoid(b_a * b_g)
+        value += tl.load(BIAS + columns, mask=mask, other=0).to(tl.float32)
+    scale = tl.exp(tl.load(A + heads, mask=mask, other=0).to(tl.float32))
+    if SAFE_GATE:
+        result = LOWER_BOUND / (1.0 + tl.exp(-(scale * value)))
     else:
-        g_scaled = b_g * beta
-        use_linear = g_scaled > threshold
-        sp = tl.where(use_linear, b_g, (1.0 / beta) * log(1.0 + tl.exp(g_scaled)))
-        b_y = -b_a * sp
-
-    tl.store(y_ptr, b_y.to(y.dtype.element_ty), mask=m_g)
+        scaled = value * BETA
+        softplus = tl.where(
+            scaled > THRESHOLD, value, (1.0 / BETA) * log(1.0 + tl.exp(scaled))
+        )
+        result = -scale * softplus
+    tl.store(Y + offsets, result, mask=mask)
 
 
 def fused_kda_gate(
@@ -107,47 +77,62 @@ def fused_kda_gate(
     g_bias: torch.Tensor | None = None,
     beta: float = 1.0,
     threshold: float = 20.0,
-    lower_bound: float | None = None,
+    safe_gate: bool = False,
+    lower_bound: float | None = -5.0,
 ) -> torch.Tensor:
+    """Return a fresh FP32 gate of shape ``[..., H, head_k_dim]``.
+
+    The interface follows GLM5Next's ``third_party/kda/kernels.py``. With
+    ``safe_gate=False``, compute ``-exp(A) * softplus(g + g_bias)`` using
+    ``beta`` and ``threshold``. Otherwise compute
+    ``lower_bound / (1 + exp(-exp(A) * (g + g_bias)))``. A ``None`` lower bound
+    means -5.0, and the lower bound has no effect on the softplus branch.
+    Inputs must be contiguous CUDA floating tensors. This is forward only.
     """
-    Forward pass for KDA gate:
-      input g: [..., H*D]
-      param A: [H] or [1, 1, H, 1]
-      beta: softplus beta parameter
-      threshold: softplus threshold parameter
-      return  : [..., H, D]
-    """
-    logger.debug("GEMS FUSED_KDA_GATE")
-    orig_shape = g.shape[:-1]
+    if g.ndim < 1 or head_k_dim < 1 or A.numel() < 1:
+        raise ValueError("KDA gate requires a nonempty head/key dimension")
+    heads = A.numel()
+    hidden = heads * head_k_dim
+    if g.shape[-1] != hidden:
+        raise ValueError("g.shape[-1] must equal A.numel() * head_k_dim")
+    if g_bias is not None and g_bias.numel() != hidden:
+        raise ValueError("g_bias must contain H * head_k_dim elements")
+    for tensor in (g, A, g_bias):
+        if tensor is None:
+            continue
+        if tensor.device != g.device:
+            raise ValueError("KDA gate inputs must be on the same device")
+        if tensor.device.type != "cuda":
+            raise NotImplementedError("fused_kda_gate currently supports CUDA")
+        if tensor.dtype not in (
+            torch.float16,
+            torch.bfloat16,
+            torch.float32,
+            torch.float64,
+        ):
+            raise NotImplementedError("KDA gate requires floating point inputs")
+        if not tensor.is_contiguous():
+            raise NotImplementedError("KDA gate requires contiguous inputs")
 
-    g = g.view(-1, g.shape[-1])
-    T = g.shape[0]
-    HD = g.shape[1]
-    H = A.numel()
-    assert H * head_k_dim == HD
-    assert g.stride() == (HD, 1)
-
-    y = torch.empty_like(g, dtype=torch.float32)
-
-    def grid(meta):
-        return (triton.cdiv(T, meta["BT"]), H, triton.cdiv(head_k_dim, meta["BD"]))
-
-    gems_kda_gate_fwd_kernel[grid](
-        g,
-        A,
-        y,
-        g_bias,
-        lower_bound or 0.0,
-        beta,
-        threshold,
-        T,
-        triton.next_power_of_2(T),
-        H,
-        head_k_dim,
-        #BD=triton.next_power_of_2(head_k_dim),
-        HAS_BIAS=g_bias is not None,
-        USE_LOWER_BOUND=lower_bound is not None,
+    output = torch.empty(
+        (*g.shape[:-1], heads, head_k_dim), device=g.device, dtype=torch.float32
     )
-
-    y = y.view(*orig_shape, H, head_k_dim)
-    return y
+    tokens = g.numel() // hidden
+    if tokens == 0:
+        return output
+    with runtime.torch_device_fn.device(g.device):
+        _fused_kda_gate_kernel[lambda meta: (triton.cdiv(g.numel(), meta["BLOCK"]),)](
+            g,
+            A,
+            g_bias,
+            output,
+            tokens,
+            heads,
+            head_k_dim,
+            beta,
+            threshold,
+            safe_gate,
+            -5.0 if lower_bound is None else lower_bound,
+            g_bias is not None,
+        )
+    return output
