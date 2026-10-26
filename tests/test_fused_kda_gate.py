@@ -444,3 +444,18 @@ def test_device_guard():
     assert_output(g, A, 128, safe_gate=True)
     assert_output(g, A, 128, safe_gate=True)
     assert torch.cuda.current_device() == original
+
+
+@pytest.mark.parametrize("safe_gate", [False, True])
+def test_large_head_count(safe_gate):
+    T, H, D = 16385, 96, 128
+    g = torch.randn(T, H * D, device=flaggems_vllm.device, dtype=torch.bfloat16)
+    A = torch.randn(H, device=g.device)
+    bias = torch.randn(H, D, device=g.device)
+    out = gems_fused_kda_gate(g, A, D, bias, safe_gate=safe_gate)
+    # Check the head mapping at distant rows and the partially filled last block.
+    rows = torch.tensor([0, 31, 32, T - 2, T - 1], device=g.device)
+    ref = torch_fused_kda_gate(g.index_select(0, rows), A, D, bias, safe_gate=safe_gate)
+    utils.gems_assert_close(
+        out.index_select(0, rows), utils.to_reference(ref), torch.float32
+    )
