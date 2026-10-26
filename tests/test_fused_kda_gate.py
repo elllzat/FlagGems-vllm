@@ -395,3 +395,23 @@ def test_public_export_and_signature():
     assert inspect.signature(gems_fused_kda_gate) == inspect.signature(
         ref_fused_kda_gate
     )
+
+
+@pytest.mark.parametrize("safe_gate", [False, True])
+def test_repeated_metadata_reads_current_values(safe_gate):
+    device = flaggems_vllm.device
+    g = torch.randn(8, 1024, device=device, dtype=torch.bfloat16)
+    A = torch.randn(8, device=device)
+    bias = torch.randn(8, 128, device=device)
+    assert_output(g, A, 128, bias, safe_gate=safe_gate)
+    g.add_(0.5)
+    A.mul_(0.5)
+    bias.sub_(0.25)
+    # The same metadata must launch with the new values, on the current stream.
+    stream = torch.cuda.Stream()
+    stream.wait_stream(torch.cuda.current_stream())
+    with torch.cuda.stream(stream):
+        assert_output(g, A, 128, bias, safe_gate=safe_gate)
+        replacement = torch.randn_like(g)
+        assert_output(replacement, A.clone(), 128, bias.clone(), safe_gate=safe_gate)
+    torch.cuda.current_stream().wait_stream(stream)
