@@ -459,3 +459,13 @@ def test_large_head_count(safe_gate):
     utils.gems_assert_close(
         out.index_select(0, rows), utils.to_reference(ref), torch.float32
     )
+
+
+@pytest.mark.parametrize("safe_gate", [False, True])
+@pytest.mark.parametrize("dtype", DTYPES + ([] if cfg.QUICK_MODE else [torch.float64]))
+def test_tiled_dtypes_and_tail(dtype, safe_gate):
+    T, H, D = 5003, 12, 80
+    g = torch.randn(T, H * D, device=flaggems_vllm.device, dtype=dtype)
+    A = torch.randn(1, 1, H, 1, device=g.device)
+    bias = torch.randn(H, D, device=g.device)
+    assert_output(g, A, D, bias, safe_gate=safe_gate)
