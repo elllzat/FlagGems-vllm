@@ -11,72 +11,64 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import pytest
 import torch
-import triton
-import triton.language as tl
+import yaml
 
 import flaggems_vllm
 from flaggems_vllm import fused_kda_gate as gems_fused_kda_gate
+from tests.test_fused_kda_gate import ref_fused_kda_gate
 
-from . import base
-
-try:
-    from vllm.models.kimi_k3.nvidia.ops.third_party.kda import fused_kda_gate as vllm_fused_kda_gate
-
-    HAS_VLLM = True
-except ImportError:
-    HAS_VLLM = False
+from . import base, consts
+from .conftest import Config
 
 
 class FusedKdaGateBenchmark(base.Benchmark):
-    DEFAULT_DTYPES = [torch.bfloat16, torch.float16]
-
-    def __init__(self, op_name, torch_op, dtypes):
-        super().__init__(op_name=op_name, torch_op=torch_op, dtypes=dtypes)
+    DEFAULT_DTYPES = [torch.bfloat16, torch.float16, torch.float32]
 
     def set_shapes(self, shape_file_path=None):
-        configs = [
-            (T, H, D, lower_bound)
+        # Keep the original branch's decode matrix, with the aligned safe_gate flag.
+        self.shapes = [
+            (T, H, D, safe_gate)
             for T in [1, 8, 64, 300]
-            #for T in [1, 8, 64, 1024, 4096, 32768, 65536]
             for H in [8, 96]
-            #for H in [8]
             for D in [64, 128]
-            #for D in [128]
-            for lower_bound in [-5.0, None]
-            #for lower_bound in [-5.0]
+            for safe_gate in [False, True]
         ]
-        self.shapes = configs
+        if Config.bench_level == consts.BenchLevel.COMPREHENSIVE:
+            self.shapes += [
+                (T, H, 128, safe_gate)
+                for T in [1024, 4097, 16384]
+                for H in [8, 96]
+                for safe_gate in [False, True]
+            ]
+        if shape_file_path:
+            with open(shape_file_path) as stream:
+                entry = yaml.safe_load(stream).get(self.op_name)
+            if entry:
+                self.shapes = [tuple(shape) for shape in entry["shapes"]]
 
     def get_input_iter(self, dtype):
-        for config in self.shapes:
-            yield from self.make_input_fn(config, dtype, self.device)
-
-    def make_input_fn(self, config, dtype, device):
-        torch.manual_seed(42)
-        T, H, D, lower_bound = config
-        raw_g = torch.randn(1, T, H, D, dtype=dtype, device=flaggems_vllm.device)
-        g = raw_g.contiguous().view(T, H * D)
-        A_log = torch.randn(H, dtype=torch.float32, device=flaggems_vllm.device) * 0.5
-        dt_bias = torch.randn(H, D, dtype=torch.float32, device=flaggems_vllm.device) * 0.1
-        beta = 1.0
-        threshold = 20.0
-        yield (g, A_log, D, dt_bias, beta, threshold, lower_bound)
+        for T, H, D, safe_gate in self.shapes:
+            torch.manual_seed(42)
+            g = torch.randn(T, H * D, device=self.device, dtype=dtype)
+            A = torch.randn(H, device=self.device) * 0.5
+            bias = torch.randn(H, D, device=self.device) * 0.1
+            args = (g, A, D, bias, 1.0, 20.0, safe_gate, -5.0)
+            # Compile/autotune both before the framework estimates iteration counts.
+            # Every timed call still dispatches the complete op and allocates its output.
+            ref_fused_kda_gate(*args)
+            gems_fused_kda_gate(*args)
+            flaggems_vllm.runtime.torch_device_fn.synchronize()
+            yield args
 
 
 @pytest.mark.fused_kda_gate
-@pytest.mark.skipif(
-    not HAS_VLLM,
-    reason="requires vLLM to be installed for reference comparison",
-)
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="requires CUDA")
 def test_fused_kda_gate():
     bench = FusedKdaGateBenchmark(
         op_name="fused_kda_gate",
-        torch_op=vllm_fused_kda_gate,
-        #dtypes=[torch.bfloat16, torch.float16],
-        dtypes=[torch.bfloat16],
+        torch_op=ref_fused_kda_gate,
     )
     bench.set_gems(gems_fused_kda_gate)
     bench.run()

@@ -1082,6 +1082,26 @@ kpool_hadamard:
     num_warps: 2
   - META: {}
     num_warps: 4
+fused_kda_gate:
+  - META: {BLOCK: 128}
+    num_warps: 4
+    num_stages: 1
+  - META: {BLOCK: 256}
+    num_warps: 4
+    num_stages: 1
+  - META: {BLOCK: 512}
+    num_warps: 4
+    num_stages: 1
+  - META: {BLOCK: 1024}
+    num_warps: 4
+    num_stages: 1
+  - META: {BLOCK: 2048}
+    num_warps: 4
+    num_stages: 1
+  - META: {BLOCK: 4096}
+    num_warps: 8
+    num_stages: 1
+
 kda_safe_gate:
   - META: {BLOCK: 256}
     num_warps: 4
