@@ -45,6 +45,36 @@ def _digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def _operator_timings(torch, functions):
+    """Repository operator-mode methodology, on tensors captured from the model."""
+    rounds = []
+    for index in range(3):
+        times = {}
+        order = list(functions.items())
+        if index % 2:
+            order.reverse()
+        for name, function in order:
+            torch.cuda.synchronize()
+            start = time.perf_counter()
+            for _ in range(5):
+                function()
+            torch.cuda.synchronize()
+            estimate_ms = (time.perf_counter() - start) * 1000 / 5
+            warmup = max(1, int(100 / estimate_ms))
+            repeat = max(1, int(500 / estimate_ms))
+            for _ in range(warmup):
+                function()
+            torch.cuda.synchronize()
+            start = time.perf_counter()
+            for _ in range(repeat):
+                function()
+            torch.cuda.synchronize()
+            times[name] = (time.perf_counter() - start) * 1000 / repeat
+        times["speedup"] = times["native_ms"] / times["gems_ms"]
+        rounds.append(times)
+    return {"mode": "operator", "cuda_graph": False, "paired_rounds": rounds}
+
+
 class GateObserver:
     """Worker-local test adapter. Never imported by production operators."""
 
@@ -62,6 +92,7 @@ class GateObserver:
         self.layer_class = kda.Glm5NextLinearAttention
         self.mode = "native"
         self.trace = False
+        self.profile = False
         self.rows = {}
         self.original = {
             "decode": kda.fused_recurrent_kda,
@@ -103,6 +134,15 @@ class GateObserver:
                     candidate, expected, rtol=3e-6, atol=3e-6
                 )
                 row.update(calls=0, gate_check="passed")
+                if self.profile:
+                    arguments = (flat, A, d, bias, 1.0, 20.0, safe, lower)
+                    row["standalone_operator_timings"] = _operator_timings(
+                        self.torch,
+                        {
+                            "native_ms": lambda: self.standalone(*arguments),
+                            "gems_ms": lambda: self.candidate(*arguments),
+                        },
+                    )
                 self.rows[key] = row
             self.rows[key]["calls"] += 1
         if self.mode == "gems-split":
@@ -172,8 +212,9 @@ class GateObserver:
         self.standalone_calls += 1
         return self.standalone(*args, **kwargs)
 
-    def configure(self, mode, trace):
+    def configure(self, mode, trace, profile=False):
         self.mode, self.trace = mode, trace
+        self.profile = profile
         if mode == "native" and not trace:
             self.layer.fused_recurrent_kda = self.original["decode"]
             self.layer.chunk_kda_with_fused_gate = self.original["prefill"]
@@ -195,7 +236,7 @@ class KdaGateWorkerExtension:
     def kda_gate_configure(self, mode, trace):
         if not hasattr(self, "_gate_observer"):
             self._gate_observer = GateObserver()
-        self._gate_observer.configure(mode, trace)
+        self._gate_observer.configure(mode, trace, profile=trace)
 
     def kda_gate_report(self):
         observer = self._gate_observer
@@ -219,6 +260,18 @@ def _write(path, result):
     temporary = path.with_suffix(".tmp")
     temporary.write_text(json.dumps(result, indent=2), encoding="utf-8")
     temporary.replace(path)
+    shapes = {
+        (row["T"], row["H"], row["D"], row["safe_gate"])
+        for case in result.get("cases", [])
+        for worker in case.get("workers", [])
+        for row in worker["shapes"]
+    }
+    if shapes:
+        # JSON is valid YAML and is accepted by the existing --shape_file reader.
+        path.with_suffix(".shapes.yaml").write_text(
+            json.dumps({"fused_kda_gate": {"shapes": sorted(shapes)}}, indent=2),
+            encoding="utf-8",
+        )
 
 
 def _prompts(tokenizer, length, batch):
@@ -267,6 +320,31 @@ def _weights_ready(model):
         "shards": len(files),
         "weight_bytes": sum((model / name).stat().st_size for name in files),
     }
+
+
+def _idle_devices(tp):
+    import pynvml
+
+    pynvml.nvmlInit()
+    try:
+        if pynvml.nvmlDeviceGetCount() != tp:
+            raise RuntimeError("Expose exactly TP GPUs in the isolated model container")
+        devices = []
+        for index in range(tp):
+            handle = pynvml.nvmlDeviceGetHandleByIndex(index)
+            processes = pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
+            if processes:
+                raise BlockingIOError(f"GPU {index} has existing compute processes")
+            devices.append(
+                {
+                    "uuid": str(pynvml.nvmlDeviceGetUUID(handle)),
+                    "memory_used": pynvml.nvmlDeviceGetMemoryInfo(handle).used,
+                    "temperature_c": pynvml.nvmlDeviceGetTemperature(handle, 0),
+                }
+            )
+        return devices
+    finally:
+        pynvml.nvmlShutdown()
 
 
 def _adapter_smoke(output):
@@ -341,6 +419,7 @@ def main():
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.97)
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--adapter-smoke-only", action="store_true")
+    parser.add_argument("--wait-for-checkpoint", type=int, default=0, metavar="SECONDS")
     args = parser.parse_args()
     if args.adapter_smoke_only:
         _adapter_smoke(args.output)
@@ -351,7 +430,27 @@ def main():
         parser.error("gems-split requires the explicitly labelled Triton experiment")
     if min(args.input_lengths + args.batches + [args.output_length, args.repeats]) < 1:
         parser.error("workload sizes and repeats must be positive")
-    weights = _weights_ready(args.model)
+    deadline = time.monotonic() + args.wait_for_checkpoint
+    while True:
+        try:
+            weights = _weights_ready(args.model)
+            devices = _idle_devices(args.tp)
+            break
+        except (FileNotFoundError, json.JSONDecodeError, BlockingIOError) as error:
+            if time.monotonic() >= deadline:
+                raise
+            _write(
+                args.output,
+                {
+                    "status": (
+                        "waiting_for_gpus"
+                        if isinstance(error, BlockingIOError)
+                        else "waiting_for_checkpoint"
+                    ),
+                    "detail": str(error),
+                },
+            )
+            time.sleep(30)
     os.environ.setdefault("VLLM_NO_USAGE_STATS", "1")
     os.environ.setdefault("DO_NOT_TRACK", "1")
     from vllm import LLM, SamplingParams
@@ -386,6 +485,7 @@ def main():
         "mode": args.mode,
         "config": config,
         "python": platform.python_version(),
+        "devices_before_run": devices,
         "vllm": importlib.metadata.version("vllm"),
         "commit": subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=root, text=True
