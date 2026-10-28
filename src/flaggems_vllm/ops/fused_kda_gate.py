@@ -120,16 +120,10 @@ def _fused_kda_gate_tiled_kernel(
 
 
 _launchers = OrderedDict()
-# LibEntry passes constexpr arguments to CompiledKernel on Triton 3.3-3.6.
+# LibEntry forwards constexpr args on 3.3-3.6 and runtime-only args on 3.7.
 # Keep other versions on the normal LibEntry path.
-_cache_launch = (
-    (3, 3)
-    <= tuple(map(int, triton.__version__.split(".")[:2]))
-    <= (
-        3,
-        6,
-    )
-)
+_triton_version = tuple(map(int, triton.__version__.split(".")[:2]))
+_cache_launch = (3, 3) <= _triton_version <= (3, 7)
 
 
 def _metadata(tensor):
@@ -243,6 +237,8 @@ def fused_kda_gate(
             grid = (triton.cdiv(g.numel(), meta["BLOCK"]), 1, 1)
             launch_constants = (*constants, meta["BLOCK"])
         if _cache_launch:
+            if _triton_version >= (3, 7):
+                launch_constants = ()
             # Store validated metadata and compiled code, never input/output tensors.
             _launchers[key] = (output.shape, kernel[grid], launch_constants)
             if len(_launchers) > 128:
