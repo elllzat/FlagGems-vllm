@@ -27,6 +27,7 @@ import os
 import platform
 import statistics
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -363,13 +364,16 @@ def _adapter_smoke(output):
             A = torch.randn(8, device="cuda", dtype=torch.float32) * 0.1
             bias = torch.randn(8, 128, device="cuda", dtype=torch.float32) * 0.1
             beta = torch.rand(1, length, 8, device="cuda", dtype=torch.float32)
-            state = torch.zeros(
-                2 if path == "decode" else 1,
-                8,
-                128,
-                128,
-                device="cuda",
-                dtype=torch.float32,
+            state = (
+                torch.randn(
+                    2 if path == "decode" else 1,
+                    8,
+                    128,
+                    128,
+                    device="cuda",
+                    dtype=torch.float32,
+                )
+                * 0.1
             )
             cu = torch.tensor([0, length], device="cuda", dtype=torch.int32)
             common = dict(
@@ -403,7 +407,15 @@ def _adapter_smoke(output):
                     output_final_state=True,
                 )
                 candidate_fn = observer.chunk
-            expected = observer.original[path](initial_state=state.clone(), **call)
+            # Native chunk KDA reuses v as its output buffer. Independent inputs
+            # keep the reference result and the candidate input from aliasing it.
+            reference_call = {
+                key: value.clone() if key in ("q", "k", "v") else value
+                for key, value in call.items()
+            }
+            expected = observer.original[path](
+                initial_state=state.clone(), **reference_call
+            )
             candidate = candidate_fn(initial_state=state.clone(), **call)
             for actual, reference in zip(candidate, expected):
                 torch.testing.assert_close(actual, reference, rtol=1e-2, atol=1e-2)
@@ -414,6 +426,10 @@ def _adapter_smoke(output):
 
 
 def main():
+    # CUDA JIT helpers must find this environment's ninja and Python executables.
+    os.environ["PATH"] = (
+        str(Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", "")
+    )
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path)
     parser.add_argument("--output", type=Path, required=True)
@@ -478,6 +494,7 @@ def main():
         "enforce_eager": True,
         "prefix_caching": False,
         "speculation": False,
+        "modality": "text",
     }
     reference = None
     if args.reference:
@@ -507,6 +524,7 @@ def main():
         tensor_parallel_size=args.tp,
         enforce_eager=True,
         enable_prefix_caching=False,
+        limit_mm_per_prompt={"image": 0, "video": 0},
         seed=42,
         max_model_len=max(args.input_lengths) + args.output_length + 16,
         max_num_seqs=max(args.batches),
