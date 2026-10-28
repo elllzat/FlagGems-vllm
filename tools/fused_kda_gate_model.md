@@ -66,6 +66,9 @@ code. Do not edit installed vLLM or the baseline sources.
 
 ```bash
 export PYTHONPATH=src:.
+export CUDA_HOME=/usr/local/cuda-12.9
+export PATH=/opt/kda-model-env/bin:$CUDA_HOME/bin:$PATH
+export MAX_JOBS=4
 export VLLM_NO_USAGE_STATS=1
 export DO_NOT_TRACK=1
 python tools/fused_kda_gate_model.py --model /models/GLM-5.3-Flash \
