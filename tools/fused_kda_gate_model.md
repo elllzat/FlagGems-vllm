@@ -78,6 +78,23 @@ candidate call count and successful real-weight inference are required before
 claiming model integration. Missing weights, zero candidate calls, or a failed
 comparison leave model acceptance incomplete.
 
+Each real-model result also produces `<output>.shapes.yaml`, accepted by the
+existing operator benchmark's `--shape_file` option. This collects **observed**
+T/H/D/safe_gate combinations from all ranks and both phases; it does not infer
+model shapes from the standalone benchmark matrix. Run the operator benchmark
+with the observed dtype(s) and `--mode operator`, separately from model timings.
+The trace pass also measures the actual native standalone interface and Gems on
+the captured real tensors: 100 ms warmup, 500 ms measurement, three paired rounds,
+alternating order, wall time plus synchronization, no CUDA Graph. These fields
+are explicitly standalone timings; they do not measure native fused KDA latency.
+They run concurrently on TP workers and must be distinguished from the previous
+single-GPU standalone matrix.
+
+`--wait-for-checkpoint 21600` allows a currently running test job to wait for the
+resumable weight download. It only waits on missing checkpoint files, writes
+`waiting_for_checkpoint`, and cannot report a model result until real inference
+completes.
+
 Before loading the model, validate both adapters on the installed native KDA
 implementation (small synthetic tensors, **not** a real-model acceptance result):
 
