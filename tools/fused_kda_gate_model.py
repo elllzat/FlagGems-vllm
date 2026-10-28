@@ -196,6 +196,8 @@ class GateObserver:
         return self.kernels.chunk_kda(g=gate, **forwarded)
 
     def flash(self, layer, *args, **kwargs):
+        if self.mode == "gems-split":
+            raise RuntimeError("FlashKDA cannot consume a precomputed standalone gate")
         native = self.original["flashkda"]
         bound = self.signatures["flashkda"].bind(layer, *args, **kwargs)
         bound.apply_defaults()
@@ -307,6 +309,16 @@ def _request_metrics(output):
 
 
 def _weights_ready(model):
+    for name in (
+        "config.json",
+        "model.safetensors.index.json",
+        "tokenizer.json",
+        "tokenizer_config.json",
+        "processor_config.json",
+        "chat_template.jinja",
+    ):
+        if not (model / name).is_file():
+            raise FileNotFoundError(f"Checkpoint file missing: {name}")
     config = json.loads((model / "config.json").read_text())
     if config.get("architectures") != ["Glm5NextForConditionalGeneration"]:
         raise ValueError("Expected the complete GLM-5.3-Flash checkpoint")
@@ -480,6 +492,18 @@ def main():
     from vllm import LLM, SamplingParams
 
     root = Path(__file__).resolve().parents[1]
+    environment = {
+        name: importlib.metadata.version(name)
+        for name in (
+            "vllm",
+            "torch",
+            "triton",
+            "flag-gems",
+            "numpy",
+            "flashinfer-python",
+        )
+    }
+    harness_sha = _digest(__file__)
     config = {
         "model": str(args.model.resolve()),
         "weights": weights,
@@ -505,6 +529,10 @@ def main():
             )
         if reference["vllm"] != importlib.metadata.version("vllm"):
             raise ValueError("Reference and candidate must use the same vLLM version")
+        if reference["environment"] != environment:
+            raise ValueError("Reference and candidate environments differ")
+        if reference["harness_sha256"] != harness_sha:
+            raise ValueError("Rebuild the baseline after changing test methodology")
     result = {
         "status": "initializing",
         "mode": args.mode,
@@ -512,6 +540,9 @@ def main():
         "python": platform.python_version(),
         "devices_before_run": devices,
         "vllm": importlib.metadata.version("vllm"),
+        "environment": environment,
+        "cuda_home": os.environ.get("CUDA_HOME"),
+        "harness_sha256": harness_sha,
         "commit": subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=root, text=True
         ).strip(),
