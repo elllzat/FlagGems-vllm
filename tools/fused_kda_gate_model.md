@@ -13,7 +13,7 @@ It does not turn the standalone operator speedup into a model speedup.
 | Read-only | Operator, tests, benchmark baseline, installed vLLM sources, checkpoint |
 | Model | Official `zai-org/GLM-5.3-Flash` FP8 checkpoint |
 | Model revision | `46a050bec13002ad29ee795c16e61cf4fa3c4a9c` |
-| Runtime | vLLM 0.32.0, official CUDA 12.9 wheel; isolated environment |
+| Runtime | vLLM 0.32.0+cu129, torch 2.13.0+cu129, Triton 3.7.1; isolated environment |
 | Version exception | Document's vLLM 0.24.0 has no `glm5next` implementation |
 | Build | No production kernel change; Python compile and pre-commit |
 | Validation | Actual gate inputs versus native gate; greedy generated token IDs versus native model |
@@ -36,6 +36,13 @@ It does not turn the standalone operator speedup into a model speedup.
 | Correctness | Gate output rtol/atol 3e-6; deterministic generation compared exactly |
 | Autograd | Inference only |
 | Torch use | Model execution and correctness checks only; operator production path unchanged |
+
+The isolated environment uses FlagGems 5.0.0 and NumPy 2.3.5. FlagGems 5.0.2
+pins NumPy 1.26.4, conflicting with vLLM 0.32's OpenCV/ML-dtypes requirements.
+FlagGems 5.0.0 permits the compatible NumPy version; `uv pip check` passes.
+The existing operator tests pass 131/131 on this environment, including the
+two-device guard. Adapter smoke passes FP16/BF16 prefill and decode with nonzero
+state. Those checks do not replace real-checkpoint model acceptance.
 
 ## Execution paths
 
@@ -71,7 +78,8 @@ python tools/fused_kda_gate_model.py --model /models/GLM-5.3-Flash \
 ```
 
 All three use `enforce_eager=True`, disable prefix caching and speculation, and
-load the complete checkpoint. The default native baseline must be reported
+use text prompts with image/video limits set to zero, loading the complete
+checkpoint. The default native baseline must be reported
 alongside the controlled Triton comparison. Results contain environment/source
 hashes, worker traces, generated token IDs, and per-workload timings. A nonzero
 candidate call count and successful real-weight inference are required before
