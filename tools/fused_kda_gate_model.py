@@ -363,7 +363,14 @@ def _adapter_smoke(output):
             A = torch.randn(8, device="cuda", dtype=torch.float32) * 0.1
             bias = torch.randn(8, 128, device="cuda", dtype=torch.float32) * 0.1
             beta = torch.rand(1, length, 8, device="cuda", dtype=torch.float32)
-            state = torch.zeros(1, 8, 128, 128, device="cuda", dtype=torch.float32)
+            state = torch.zeros(
+                2 if path == "decode" else 1,
+                8,
+                128,
+                128,
+                device="cuda",
+                dtype=torch.float32,
+            )
             cu = torch.tensor([0, length], device="cuda", dtype=torch.int32)
             common = dict(
                 q=q,
@@ -381,7 +388,8 @@ def _adapter_smoke(output):
                     g_bias=bias,
                     compute_gate=True,
                     lower_bound=-5.0,
-                    ssm_state_indices=torch.zeros(1, device="cuda", dtype=torch.int32),
+                    # Cache slot zero is vLLM's NULL_BLOCK_ID and skips the kernel.
+                    ssm_state_indices=torch.ones(1, device="cuda", dtype=torch.int32),
                 )
                 candidate_fn = observer.recurrent
             else:
