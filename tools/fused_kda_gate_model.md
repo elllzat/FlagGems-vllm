@@ -35,6 +35,10 @@ source confirms that 3.7 forwards only runtime pointer arguments, whereas
 to 3.7 using the matching argument convention, without changing kernel math or
 autotune. Acceptance requires the existing accuracy suite on both runtimes and
 paired complete-call measurements; actual-model testing remains pending.
+The compatibility change passed 131/131 tests on both Triton 3.6.0 and 3.7.1.
+Three paired synthetic precheck rounds now yield median speedups of
+1.948/1.958/1.948/1.983x for those four sizes. Keep the compatibility change;
+these exploratory numbers still do not constitute model acceptance.
 
 ## Contract
 
@@ -54,6 +58,9 @@ FlagGems 5.0.0 permits the compatible NumPy version; `uv pip check` passes.
 The existing operator tests pass 131/131 on this environment, including the
 two-device guard. Adapter smoke passes FP16/BF16 prefill and decode with nonzero
 state. Those checks do not replace real-checkpoint model acceptance.
+The adapter smoke also compares tracing enabled/disabled. The keyword-call path
+used by GLM avoids signature binding in timed runs and preserves the batch shape
+through a single no-copy input view.
 
 ## Execution paths
 
@@ -81,6 +88,7 @@ export PYTHONPATH=src:.
 export CUDA_HOME=/usr/local/cuda-12.9
 export PATH=/opt/kda-model-env/bin:$CUDA_HOME/bin:$PATH
 export MAX_JOBS=4
+export VLLM_PLUGINS=""
 export VLLM_NO_USAGE_STATS=1
 export DO_NOT_TRACK=1
 python tools/fused_kda_gate_model.py --model /models/GLM-5.3-Flash \

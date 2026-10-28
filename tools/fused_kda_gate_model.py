@@ -111,7 +111,7 @@ class GateObserver:
     def gate(self, path, g, A, bias, safe, lower):
         h, d = g.shape[-2:]
         # view fails instead of silently inserting a copy for unsupported layouts.
-        flat = g.view(-1, h * d)
+        flat = g.view(*g.shape[:-2], h * d)
         candidate = None
         if self.trace:
             row = {
@@ -119,7 +119,7 @@ class GateObserver:
                 "g": _tensor_metadata(g),
                 "A": _tensor_metadata(A),
                 "bias": _tensor_metadata(bias),
-                "T": flat.shape[0],
+                "T": flat.numel() // (h * d),
                 "H": h,
                 "D": d,
                 "safe_gate": safe,
@@ -150,50 +150,57 @@ class GateObserver:
             if candidate is None:
                 candidate = self.candidate(flat, A, d, bias, 1.0, 20.0, safe, lower)
             self.candidate_calls += 1
-            return candidate.view(g.shape)
+            return candidate
         return None
 
     def recurrent(self, *args, **kwargs):
         native = self.original["decode"]
-        bound = self.signatures["decode"].bind(*args, **kwargs)
-        bound.apply_defaults()
-        values = bound.arguments
-        if values["compute_gate"]:
+        if args:
+            bound = self.signatures["decode"].bind(*args, **kwargs)
+            bound.apply_defaults()
+            values = bound.arguments
+        else:
+            # GLM calls these functions by keyword. Avoid signature introspection
+            # in the actual model path, including its timed calls.
+            values = kwargs
+        if values.get("compute_gate", False):
             gate = self.gate(
                 "decode",
                 values["g"],
                 values["a_log"],
                 values["g_bias"],
                 True,
-                values["lower_bound"],
+                values.get("lower_bound", -5.0),
             )
             if gate is not None:
                 values["g"] = gate
                 values["compute_gate"] = False
-        return native(*bound.args, **bound.kwargs)
+        if args:
+            return native(*bound.args, **bound.kwargs)
+        return native(**values)
 
     def chunk(self, *args, **kwargs):
         native = self.original["prefill"]
-        bound = self.signatures["prefill"].bind(*args, **kwargs)
-        bound.apply_defaults()
-        values = bound.arguments
+        if args:
+            bound = self.signatures["prefill"].bind(*args, **kwargs)
+            bound.apply_defaults()
+            values = dict(bound.arguments)
+            values.update(values.pop("kwargs", {}))
+        else:
+            values = kwargs
         gate = self.gate(
             "prefill",
             values["raw_g"],
             values["A_log"],
-            values["g_bias"],
-            values["safe_gate"],
-            values["lower_bound"],
+            values.get("g_bias"),
+            values.get("safe_gate", False),
+            values.get("lower_bound", -5.0),
         )
         if gate is None:
-            return native(*bound.args, **bound.kwargs)
-        forwarded = {
-            key: value
-            for key, value in values.items()
-            if key not in ("raw_g", "A_log", "g_bias", "safe_gate", "lower_bound")
-        }
-        forwarded.update(forwarded.pop("kwargs", {}))
-        return self.kernels.chunk_kda(g=gate, **forwarded)
+            return native(*args, **kwargs)
+        for name in ("raw_g", "A_log", "g_bias", "safe_gate", "lower_bound"):
+            values.pop(name, None)
+        return self.kernels.chunk_kda(g=gate, **values)
 
     def flash(self, layer, *args, **kwargs):
         if self.mode == "gems-split":
@@ -428,10 +435,23 @@ def _adapter_smoke(output):
             expected = observer.original[path](
                 initial_state=state.clone(), **reference_call
             )
-            candidate = candidate_fn(initial_state=state.clone(), **call)
-            for actual, reference in zip(candidate, expected):
-                torch.testing.assert_close(actual, reference, rtol=1e-2, atol=1e-2)
-            results.append({"path": path, "dtype": str(dtype), "status": "passed"})
+            for tracing in (True, False):
+                observer.configure("gems-split", tracing)
+                candidate_call = {
+                    key: value.clone() if key in ("q", "k", "v") else value
+                    for key, value in call.items()
+                }
+                candidate = candidate_fn(initial_state=state.clone(), **candidate_call)
+                for actual, reference in zip(candidate, expected):
+                    torch.testing.assert_close(actual, reference, rtol=1e-2, atol=1e-2)
+                results.append(
+                    {
+                        "path": path,
+                        "dtype": str(dtype),
+                        "tracing": tracing,
+                        "status": "passed",
+                    }
+                )
     observer.configure("native", False)
     _write(output, {"status": "adapter_smoke_passed", "cases": results})
     print(json.dumps(results))
@@ -519,6 +539,7 @@ def main():
         "prefix_caching": False,
         "speculation": False,
         "modality": "text",
+        "vllm_plugins": os.environ.get("VLLM_PLUGINS"),
     }
     reference = None
     if args.reference:
