@@ -9,8 +9,8 @@ It does not turn the standalone operator speedup into a model speedup.
 
 | Item | Value |
 | --- | --- |
-| Editable | This document and `tools/fused_kda_gate_model.py` |
-| Read-only | Operator, tests, benchmark baseline, installed vLLM sources, checkpoint |
+| Editable | This document, `tools/fused_kda_gate_model.py`, operator host-launch compatibility |
+| Read-only | Kernel arithmetic, tune configs, tests, benchmark baseline, installed vLLM sources, checkpoint |
 | Model | Official `zai-org/GLM-5.3-Flash` FP8 checkpoint |
 | Model revision | `46a050bec13002ad29ee795c16e61cf4fa3c4a9c` |
 | Runtime | vLLM 0.32.0+cu129, torch 2.13.0+cu129, Triton 3.7.1; isolated environment |
@@ -24,6 +24,17 @@ It does not turn the standalone operator speedup into a model speedup.
 | Profiler | Separate diagnostic run only; excluded from timings |
 | Autotune | Existing operator configs, unchanged; trace/warmup before timings |
 | Fallback | No production torch fallback; test adapters use existing native KDA routines |
+
+Runtime compatibility trial: the same operator in Triton 3.7.1 takes the regular
+LibEntry route because the existing compiled-launch cache stops at 3.6. A
+synthetic BF16/safe-gate precheck at H=16/D=128 and T=1/4/128/2048 measured
+0.838/0.837/0.839/0.797x versus the original native standalone interface. This
+triggers a dispatch investigation; these are not real-model results. LibEntry's
+source confirms that 3.7 forwards only runtime pointer arguments, whereas
+3.3-3.6 also forwards constexpr arguments. The trial extends the cached launcher
+to 3.7 using the matching argument convention, without changing kernel math or
+autotune. Acceptance requires the existing accuracy suite on both runtimes and
+paired complete-call measurements; actual-model testing remains pending.
 
 ## Contract
 
@@ -51,6 +62,7 @@ state. Those checks do not replace real-checkpoint model acceptance.
 | `native --prefill-backend auto` | Original FlashKDA/Triton prefill and recurrent decode | Default native model baseline |
 | `native --prefill-backend triton` | Original gate+cumsum prefill and recurrent decode | Controlled Triton baseline |
 | `gems-split --prefill-backend triton` | Gems gate then existing chunk/recurrent KDA with gate already computed | Explicit integration experiment; removes native gate fusion and may regress |
+| Compiled gate launcher | Cache validated metadata/code for Triton 3.3-3.7; use runtime-only launch args on 3.7 | Reuse current tensor pointers and allocate a new FP32 output on each call |
 | Trace pass | Counts actual calls, dumps shapes/scalars, validates gates | Excluded from performance timings |
 | Timed pass | Original functions for native; adapters for gems; tracing/checks disabled | Complete model call measurement |
 
