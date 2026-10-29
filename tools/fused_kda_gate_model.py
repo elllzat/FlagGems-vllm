@@ -225,7 +225,8 @@ def main():
     parser.add_argument("--input-lengths", type=int, nargs="+", default=[128, 1024])
     parser.add_argument("--batches", type=int, nargs="+", default=[1, 4])
     parser.add_argument("--output-length", type=int, default=2)
-    parser.add_argument("--gpu-memory-utilization", type=float, default=0.98)
+    parser.add_argument("--gpu-memory-utilization", type=float, default=0.95)
+    parser.add_argument("--cpu-offload-gb", type=float, default=8)
     parser.add_argument("--prefill-backend", choices=["auto", "triton"], default="auto")
     args = parser.parse_args()
     if min(args.input_lengths + args.batches + [args.tp]) < 1:
@@ -272,6 +273,7 @@ def main():
             "output_length": args.output_length,
             "max_num_batched_tokens": 2048,
             "prefill_backend": args.prefill_backend,
+            "cpu_offload_gb": args.cpu_offload_gb,
             "enforce_eager": True,
         },
         "cases": [],
@@ -290,6 +292,7 @@ def main():
             max_num_seqs=max(args.batches),
             max_num_batched_tokens=2048,
             gpu_memory_utilization=args.gpu_memory_utilization,
+            cpu_offload_gb=args.cpu_offload_gb,
             additional_config={"kda_prefill_backend": args.prefill_backend},
             worker_extension_cls="tools.fused_kda_gate_model.KdaShapeWorkerExtension",
         )
