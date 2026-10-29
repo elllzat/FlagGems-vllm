@@ -64,6 +64,8 @@ python tools/fused_kda_gate_model.py --model /models/GLM-5.3-Flash \
 Collection is offline, disables CUDA Graph and prefix caching, and uses text
 inputs. Only the small configuration/tokenizer files are needed on disk. Dummy
 weights still occupy GPU memory; the collector does not shrink the model.
+The default CPU offload allowance is 8 GiB per GPU to fit the full architecture
+on four H800s. It is recorded in the workload and does not change gate dimensions.
 
 Use the exported gate-shapes.shapes.yaml with the existing benchmark's
 --shape_file option, selecting observed dtypes and --mode operator. Operator
