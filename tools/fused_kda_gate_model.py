@@ -40,6 +40,22 @@ def _digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def _source_revision(root):
+    # Host worktree gitdir paths need not exist inside the mounted container.
+    revision = os.environ.get("KDA_SHAPE_SOURCE_COMMIT")
+    if revision:
+        return revision
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=root,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
 class ShapeObserver:
     """Read native gate metadata and delegate with the original arguments."""
 
@@ -243,9 +259,8 @@ def main():
         "trained_weights_loaded": False,
         "architecture_overrides": None,
         "model_config_sha256": _digest(config_path),
-        "commit": subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=root, text=True
-        ).strip(),
+        "commit": _source_revision(root),
+        "collector_sha256": _digest(__file__),
         "environment": {
             name: importlib.metadata.version(name)
             for name in ("vllm", "torch", "triton")
