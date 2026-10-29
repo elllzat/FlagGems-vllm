@@ -17,7 +17,11 @@ import yaml
 
 import flaggems_vllm
 from flaggems_vllm import fused_kda_gate as gems_fused_kda_gate
-from tests.test_fused_kda_gate import ref_fused_kda_gate
+from tests.test_fused_kda_gate import (
+    captured_gate_cases,
+    captured_gate_inputs,
+    ref_fused_kda_gate,
+)
 
 from . import base, consts
 from .conftest import Config
@@ -27,6 +31,7 @@ class FusedKdaGateBenchmark(base.Benchmark):
     DEFAULT_DTYPES = [torch.bfloat16, torch.float16, torch.float32]
 
     def set_shapes(self, shape_file_path=None):
+        self.captured_cases = None
         # Keep the original branch's decode matrix, with the aligned safe_gate flag.
         self.shapes = [
             (T, H, D, safe_gate)
@@ -44,11 +49,27 @@ class FusedKdaGateBenchmark(base.Benchmark):
             ]
         if shape_file_path:
             with open(shape_file_path) as stream:
-                entry = yaml.safe_load(stream).get(self.op_name)
+                payload = yaml.safe_load(stream)
+            if payload.get("purpose") == "operator_shape_capture_only":
+                self.captured_cases = captured_gate_cases(payload)
+                self.shapes = self.captured_cases
+                return
+            entry = payload.get(self.op_name)
             if entry:
                 self.shapes = [tuple(shape) for shape in entry["shapes"]]
 
     def get_input_iter(self, dtype):
+        if self.captured_cases is not None:
+            for case in self.captured_cases:
+                if case["operator_g"]["dtype"] != str(dtype):
+                    continue
+                torch.manual_seed(42)
+                args = captured_gate_inputs(case, self.device)
+                ref_fused_kda_gate(*args)
+                gems_fused_kda_gate(*args)
+                flaggems_vllm.runtime.torch_device_fn.synchronize()
+                yield args
+            return
         for T, H, D, safe_gate in self.shapes:
             torch.manual_seed(42)
             g = torch.randn(T, H * D, device=self.device, dtype=dtype)

@@ -23,7 +23,9 @@ Original FLA copyright (c) 2023-2025, Songlin Yang, Yu Zhang.
 """
 
 import inspect
+import json
 import os
+from pathlib import Path
 
 import pytest
 import torch
@@ -469,3 +471,70 @@ def test_tiled_dtypes_and_tail(dtype, safe_gate):
     A = torch.randn(1, 1, H, 1, device=g.device)
     bias = torch.randn(H, D, device=g.device)
     assert_output(g, A, D, bias, safe_gate=safe_gate)
+
+
+def captured_gate_cases(payload):
+    """Deduplicate executed contracts without losing dtype, stride or scalars."""
+    if payload.get("status") != "shapes_collected":
+        raise ValueError("model shape collection must have completed successfully")
+    cases = {}
+    fields = (
+        "operator_g",
+        "A",
+        "g_bias",
+        "D",
+        "beta",
+        "threshold",
+        "safe_gate",
+        "lower_bound",
+    )
+    for workload in payload["cases"]:
+        for worker in workload["workers"]:
+            for row in worker["shapes"]:
+                case = {field: row[field] for field in fields}
+                cases[json.dumps(case, sort_keys=True)] = case
+    if not cases:
+        raise ValueError("no executed gate shapes found")
+    return [cases[key] for key in sorted(cases)]
+
+
+def captured_gate_inputs(case, device):
+    def tensor(metadata):
+        if metadata is None:
+            return None
+        dtype = getattr(torch, metadata["dtype"].removeprefix("torch."))
+        return torch.empty_strided(
+            metadata["shape"], metadata["stride"], dtype=dtype, device=device
+        ).normal_(std=0.5)
+
+    return (
+        tensor(case["operator_g"]),
+        tensor(case["A"]),
+        case["D"],
+        tensor(case["g_bias"]),
+        case["beta"],
+        case["threshold"],
+        case["safe_gate"],
+        case["lower_bound"],
+    )
+
+
+_capture_path = os.environ.get("FUSED_KDA_GATE_SHAPES")
+_captured_cases = (
+    captured_gate_cases(json.loads(Path(_capture_path).read_text(encoding="utf-8")))
+    if _capture_path
+    else []
+)
+
+
+@pytest.mark.parametrize("case", _captured_cases)
+def test_captured_model_shapes(case):
+    utils.init_seed(42)
+    args = captured_gate_inputs(case, flaggems_vllm.device)
+    out = gems_fused_kda_gate(*args)
+    native = ref_fused_kda_gate(*args)
+    torch_ref = torch_fused_kda_gate(*args)
+    assert out.shape == (*args[0].shape[:-1], args[1].numel(), args[2])
+    assert out.dtype == torch.float32
+    utils.gems_assert_close(out, utils.to_reference(native), torch.float32)
+    utils.gems_assert_close(out, utils.to_reference(torch_ref), torch.float32)
