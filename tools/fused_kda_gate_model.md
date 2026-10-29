@@ -9,8 +9,8 @@ splitting of native fused KDA. This follows the shape collection section of the
 
 | Item | Contract |
 | --- | --- |
-| Editable | This document and tools/fused_kda_gate_model.py |
-| Read-only | Operator math/dispatch, native vLLM code, references, tests, autotune configs |
+| Editable | Collector, this document, and captured-contract input handling in the operator test/benchmark |
+| Read-only | Operator math/dispatch, native vLLM code, reference implementations, benchmark timing, autotune configs |
 | Model | Original GLM-5.3-Flash configuration; TP and scheduler settings recorded |
 | Weights | Native vLLM dummy loader; no trained checkpoint weights or downloads |
 | Runtime | vLLM 0.32.0+cu129 / torch 2.13.0+cu129 / Triton 3.7.1 |
@@ -67,9 +67,24 @@ weights still occupy GPU memory; the collector does not shrink the model.
 The default CPU offload allowance is 8 GiB per GPU to fit the full architecture
 on four H800s. It is recorded in the workload and does not change gate dimensions.
 
-Use the exported gate-shapes.shapes.yaml with the existing benchmark's
---shape_file option, selecting observed dtypes and --mode operator. Operator
-accuracy and speedup are separate from this metadata collection.
+Use the detailed JSON for standalone validation and benchmarking to preserve
+observed tensor ranks, strides, parameter dtypes and scalar values. Duplicate
+contracts across layers and ranks are tested once. Inputs are newly generated
+at the captured contracts, not activation values saved from the model.
+
+~~~bash
+export FUSED_KDA_GATE_SHAPES=/workspace/fused_kda_gate-work/gate-shapes.json
+python -m pytest -q tests/test_fused_kda_gate.py -k captured_model_shapes --ref cuda
+python -m pytest -q -s benchmark/test_fused_kda_gate.py \
+  --shape_file "$FUSED_KDA_GATE_SHAPES" --dtypes bfloat16 --mode operator \
+  --warmup 100 --iter 500 --record json \
+  --output /workspace/fused_kda_gate-work/real-shapes-round1.json
+~~~
+
+Select the dtype actually recorded in the JSON. The normalized
+gate-shapes.shapes.yaml is also available for the benchmark's original T/H/D
+matrix input mode. Operator accuracy and speedup are separate from metadata
+collection; no model latency or speedup is measured.
 
 The previously tested Triton 3.7 compiled-launch compatibility improvement remains
 in the operator: both Triton 3.6.0 and 3.7.1 passed 131 accuracy tests. Its synthetic
