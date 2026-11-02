@@ -9,8 +9,8 @@ splitting of native fused KDA. This follows the shape collection section of the
 
 | Item | Contract |
 | --- | --- |
-| Editable | Collector, this document, and captured-contract input handling in the operator test/benchmark |
-| Read-only | Operator math/dispatch, native vLLM code, reference implementations, benchmark timing, autotune configs |
+| Editable | Collector, this document, captured-contract tests, and host launch-cache removal |
+| Read-only | GPU kernel math, native vLLM code, reference implementations, benchmark timing, autotune configs |
 | Model | Original GLM-5.3-Flash configuration; TP and scheduler settings recorded |
 | Weights | Native vLLM dummy loader; no trained checkpoint weights or downloads |
 | Runtime | vLLM 0.32.0+cu129 / torch 2.13.0+cu129 / Triton 3.7.1 |
@@ -76,16 +76,21 @@ at the captured contracts, not activation values saved from the model.
 export FUSED_KDA_GATE_SHAPES=/workspace/fused_kda_gate-work/gate-shapes.json
 python -m pytest -q tests/test_fused_kda_gate.py -k captured_model_shapes --ref cuda
 python -m pytest -q -s benchmark/test_fused_kda_gate.py \
-  --shape_file "$FUSED_KDA_GATE_SHAPES" --dtypes bfloat16 --mode operator \
-  --warmup 100 --iter 500 --record json \
-  --output /workspace/fused_kda_gate-work/real-shapes-round1.json
+  --shape_file "$FUSED_KDA_GATE_SHAPES" --dtypes bfloat16 --mode cudagraph \
+  --iter 500 --record json \
+  --output /workspace/fused_kda_gate-work/cudagraph-20261102/round1.json
 ~~~
 
 Select the dtype actually recorded in the JSON. The normalized
 gate-shapes.shapes.yaml is also available for the benchmark's original T/H/D
-matrix input mode. Operator accuracy and speedup are separate from metadata
-collection; no model latency or speedup is measured.
+matrix input mode. The captured-contract accuracy test checks both eager and
+CUDA Graph replay, including changed input values after capture.
 
-The previously tested Triton 3.7 compiled-launch compatibility improvement remains
-in the operator: both Triton 3.6.0 and 3.7.1 passed 131 accuracy tests. Its synthetic
-prechecks are not presented as model-derived measurements.
+The custom metadata/compiled-launch cache has been removed at the user's request.
+Both GPU kernels and their autotune configurations are unchanged and use the
+standard LibEntry/Triton launch path. The CUDA Graph experiment uses the existing
+benchmark runner's cudagraph mode for both the native reference and Gems.
+It measures replay latency, with compilation and tuning completed before capture.
+Keep these results separate from the historical eager full-call measurements
+(--mode operator). No model latency or speedup is measured, and shape collection
+itself continues to use eager execution so its Python observation hooks can run.
