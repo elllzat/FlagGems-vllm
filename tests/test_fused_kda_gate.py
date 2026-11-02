@@ -528,10 +528,24 @@ _captured_cases = (
 
 
 @pytest.mark.parametrize("case", _captured_cases)
-def test_captured_model_shapes(case):
+@pytest.mark.parametrize("execution", ["eager", "cudagraph"])
+def test_captured_model_shapes(case, execution):
     utils.init_seed(42)
     args = captured_gate_inputs(case, flaggems_vllm.device)
-    out = gems_fused_kda_gate(*args)
+    if execution == "cudagraph":
+        stream = torch.cuda.Stream()
+        stream.wait_stream(torch.cuda.current_stream())
+        with torch.cuda.stream(stream):
+            gems_fused_kda_gate(*args)
+        torch.cuda.current_stream().wait_stream(stream)
+        graph = torch.cuda.CUDAGraph()
+        with torch.cuda.graph(graph):
+            out = gems_fused_kda_gate(*args)
+        # Replay must read current data rather than the values used for capture.
+        args[0].add_(0.25)
+        graph.replay()
+    else:
+        out = gems_fused_kda_gate(*args)
     native = ref_fused_kda_gate(*args)
     torch_ref = torch_fused_kda_gate(*args)
     assert out.shape == (*args[0].shape[:-1], args[1].numel(), args[2])
