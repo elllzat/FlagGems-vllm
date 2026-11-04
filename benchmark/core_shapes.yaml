@@ -41,6 +41,20 @@ fused_recurrent_gated_delta_rule:
     - [ragged]
     - [tail]
   shape_desc: "case (baseline.PERF_CASES)"
+
+# Captured from the complete GLM-5.3-Flash architecture with dummy weights, TP=4.
+# Standalone kernel dimensions; the original capture JSON also preserves ranks/strides.
+fused_kda_gate:
+  shapes:
+    - [1, 16, 128, true]
+    - [2, 16, 128, true]
+    - [128, 16, 128, true]
+    - [129, 16, 128, true]
+    - [257, 16, 128, true]
+    - [1024, 16, 128, true]
+    - [1025, 16, 128, true]
+    - [2048, 16, 128, true]
+
 fused_recurrent_gated_delta_rule_packed_decode:
   shapes:
     - [1, 8, 16, 128, 128]
