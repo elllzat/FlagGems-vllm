@@ -87,10 +87,30 @@ matrix input mode. The captured-contract accuracy test checks both eager and
 CUDA Graph replay, including changed input values after capture.
 
 The custom metadata/compiled-launch cache has been removed at the user's request.
-Both GPU kernels and their autotune configurations are unchanged and use the
-standard LibEntry/Triton launch path. The CUDA Graph experiment uses the existing
+The portable Triton kernels use the runtime device guard and math shim. Ascend
+and CPU are explicitly unsupported; FP64/BF16 follow backend capabilities.
+Other vendors inherit the portable `fused_kda_gate` / `fused_kda_gate_tiled`
+candidates through ConfigLoader unless their own YAML overrides those names.
+NVIDIA uses the wider `fused_kda_gate_nv` / `fused_kda_gate_tiled_nv` candidates
+with `use_cuda_graph=True`, so tuning and acceptance both time Graph replay.
+Other vendors use normal device timing during tuning; CUDA Graph support is not
+assumed. Changing the candidate set invalidates the old eager-tuned config hash.
+For reproducible experiments, also use a fresh `FLAGGEMS_DB_URL` database.
+
+All paths use the standard LibEntry/Triton launcher. The experiment uses the existing
 benchmark runner's cudagraph mode for both the native reference and Gems.
 It measures replay latency, with compilation and tuning completed before capture.
 Keep these results separate from the historical eager full-call measurements
 (--mode operator). No model latency or speedup is measured, and shape collection
 itself continues to use eager execution so its Python observation hooks can run.
+
+For a fixed-configuration CUDA Graph comparison of both paths on NVIDIA:
+
+~~~bash
+PYTHONPATH=src:. python tools/fused_kda_gate_tune.py \
+  --shapes "$FUSED_KDA_GATE_SHAPES" --output sweep.json --rounds 3 --rep 50
+~~~
+
+The diagnostic checks every candidate against the Torch formula, then measures
+each already compiled kernel in randomized order. It does not change the host
+dispatch or replace the formal operator benchmark.
