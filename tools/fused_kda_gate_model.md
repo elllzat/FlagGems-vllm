@@ -103,6 +103,13 @@ Other vendors use normal device timing during tuning; CUDA Graph support is not
 assumed. Changing the candidate set invalidates the old eager-tuned config hash.
 For reproducible experiments, also use a fresh `FLAGGEMS_DB_URL` database.
 
+The pinned vLLM baseline retains its NVIDIA-specific autotune space, including
+32-warps candidates that some vendor compilers reject. Its source is unchanged.
+Native-reference comparisons and this performance benchmark therefore run only
+on NVIDIA. Other vendors validate against the independent Torch formula, including
+both gate modes, optional bias, scalar parameters and layout/dtype boundaries.
+No cross-vendor speedup claim is made against an incompatible baseline.
+
 All paths use the standard LibEntry/Triton launcher. The experiment uses the existing
 benchmark runner's cudagraph mode for both the native reference and Gems.
 It measures replay latency, with compilation and tuning completed before capture.

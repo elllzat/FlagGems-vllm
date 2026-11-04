@@ -266,6 +266,10 @@ def test_fused_kda_gate(shape, dtype, safe_gate, has_bias):
 
 @pytest.mark.parametrize("dtype", DTYPES)
 @pytest.mark.parametrize("safe_gate", [False, True])
+@pytest.mark.skipif(
+    flaggems_vllm.vendor_name != "nvidia",
+    reason="pinned NVIDIA vLLM autotune includes vendor-specific 32-warp configs",
+)
 def test_against_pinned_vllm(dtype, safe_gate):
     g = torch.randn(8, 8 * 128, device=flaggems_vllm.device, dtype=dtype)
     A = torch.randn(1, 1, 8, 1, device=g.device)
@@ -584,9 +588,10 @@ def test_captured_model_shapes(case, execution):
         graph.replay()
     else:
         out = gems_fused_kda_gate(*args)
-    native = ref_fused_kda_gate(*args)
     torch_ref = torch_fused_kda_gate(*args)
     assert out.shape == (*args[0].shape[:-1], args[1].numel(), args[2])
     assert out.dtype == torch.float32
-    utils.gems_assert_close(out, utils.to_reference(native), torch.float32)
+    if flaggems_vllm.vendor_name == "nvidia":
+        native = ref_fused_kda_gate(*args)
+        utils.gems_assert_close(out, utils.to_reference(native), torch.float32)
     utils.gems_assert_close(out, utils.to_reference(torch_ref), torch.float32)
