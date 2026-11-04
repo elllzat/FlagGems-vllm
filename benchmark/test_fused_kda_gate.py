@@ -28,7 +28,9 @@ from .conftest import Config
 
 
 class FusedKdaGateBenchmark(base.Benchmark):
-    DEFAULT_DTYPES = [torch.bfloat16, torch.float16, torch.float32]
+    DEFAULT_DTYPES = (
+        [torch.bfloat16] if flaggems_vllm.runtime.device.support_bf16 else []
+    ) + [torch.float16, torch.float32]
 
     def set_shapes(self, shape_file_path=None):
         self.captured_cases = None
