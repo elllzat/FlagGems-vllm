@@ -1222,7 +1222,7 @@ fused_kda_gate_nv:
       num_warps: warps
       num_stages: stages
     blocks: [128, 256, 512, 1024, 2048, 4096, 8192]
-    warps: [1, 2, 4, 8]
+    warps: [4, 8]
     stages: [1]
 
 fused_kda_gate_tiled_nv:
@@ -1233,7 +1233,7 @@ fused_kda_gate_tiled_nv:
       num_warps: warps
       num_stages: stages
     block_tokens: [8, 16, 32, 64, 128]
-    warps: [2, 4, 8]
+    warps: [4, 8]
     stages: [1]
 
 kda_safe_gate:
