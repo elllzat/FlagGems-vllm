@@ -160,3 +160,22 @@ and gate source, but does not verify the normal public-package import.
 This utility reports implementation latency only. NVIDIA speedup remains measured
 with the unchanged dedicated vLLM benchmark. Do not substitute a Torch baseline
 or change NVIDIA's reference configs to manufacture a cross-vendor speedup.
+
+### Strict pinned-reference comparison on a vendor device
+
+The installed vendor vLLM may be older than the pinned GLM5Next reference and lack
+the safe-gate interface. To check the fixed reference itself without unrelated
+test imports, use:
+
+~~~bash
+python tools/fused_kda_gate_speedup.py --probe --rep 20 --output strict-probe.json
+python tools/fused_kda_gate_speedup.py --rounds 3 --rep 500 --output speedup.json
+~~~
+
+Thead may require `--isolated`. The utility loads the two original reference
+definitions and their two config-list assignments as unchanged AST nodes from
+`tests/test_fused_kda_gate.py`, retaining the source filename and line numbers.
+It preserves all 24 original configs (including 32 warps), decorators, equations
+and autotune keys. It does not filter failing configs or replace the reference.
+Compilation failures are saved with their stage and traceback, without claiming
+a speedup. Only run the full comparison after a successful strict probe.
