@@ -97,9 +97,17 @@ def check_graph(gate, inputs, device_fn):
 
 def measure(fn, mode, rep, warmup):
     if mode == "cudagraph":
-        return (
-            triton.testing.do_bench_cudagraph(fn, rep=rep, return_mode="median") * 1000
-        )
+        # Some vendor helpers require a caller-owned non-default stream.
+        # Use the same caller context on every platform, retaining each
+        # installed Triton helper's Graph capture, replay and event timing.
+        stream = torch.cuda.Stream()
+        stream.wait_stream(torch.cuda.current_stream())
+        with torch.cuda.stream(stream):
+            latency = triton.testing.do_bench_cudagraph(
+                fn, rep=rep, return_mode="median"
+            )
+        torch.cuda.current_stream().wait_stream(stream)
+        return latency * 1000
     return (
         triton.testing.do_bench(fn, warmup=warmup, rep=rep, return_mode="median") * 1000
     )
