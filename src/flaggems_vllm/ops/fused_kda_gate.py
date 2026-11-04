@@ -35,7 +35,9 @@ def _prune_flat_configs(configs, named_args, **kwargs):
     # input. In particular, do not compile/tune 8K-element tiles for tiny decode.
     elements = named_args["T"] * named_args["H"] * named_args["D"]
     max_block = max(128, triton.next_power_of_2(elements))
-    return [config for config in configs if config.kwargs["BLOCK"] <= max_block]
+    retained = [config for config in configs if config.kwargs["BLOCK"] <= max_block]
+    # A vendor override may contain only tiles larger than this tiny input.
+    return retained or [min(configs, key=lambda config: config.kwargs["BLOCK"])]
 
 
 @libentry()
