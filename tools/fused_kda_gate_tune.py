@@ -58,11 +58,11 @@ def main():
         reference = torch_fused_kda_gate(*inputs)
         constants = (T, H, D, beta, threshold, safe, lower, bias is not None)
         candidates = []
-        for path, name, entry in (
-            ("flat", "fused_kda_gate", module._fused_kda_gate_kernel),
-            ("tiled", "fused_kda_gate_tiled", module._fused_kda_gate_tiled_kernel),
+        for path, entry in (
+            ("flat", module._fused_kda_gate_kernel),
+            ("tiled", module._fused_kda_gate_tiled_kernel),
         ):
-            for config in runtime.get_tuned_config(name):
+            for config in entry.fn.configs:
                 options = config.all_kwargs()
                 if path == "flat":
                     grid = (triton.cdiv(g.numel(), options["BLOCK"]),)

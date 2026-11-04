@@ -1176,11 +1176,35 @@ fused_kda_gate:
         BLOCK: blocks
       num_warps: warps
       num_stages: stages
+    blocks: [128, 256, 512, 1024, 2048, 4096]
+    warps: [4, 8]
+    stages: [1]
+
+fused_kda_gate_tiled:
+  - gen: true
+    param_map:
+      META:
+        BT: block_tokens
+      num_warps: warps
+      num_stages: stages
+    block_tokens: [8, 16, 32, 64]
+    warps: [4, 8]
+    stages: [1]
+
+# Default portable candidates above are also used by other vendors through
+# ConfigLoader's normal fallback. NVIDIA searches a wider space with Graph timing.
+fused_kda_gate_nv:
+  - gen: true
+    param_map:
+      META:
+        BLOCK: blocks
+      num_warps: warps
+      num_stages: stages
     blocks: [128, 256, 512, 1024, 2048, 4096, 8192]
     warps: [1, 2, 4, 8]
     stages: [1]
 
-fused_kda_gate_tiled:
+fused_kda_gate_tiled_nv:
   - gen: true
     param_map:
       META:

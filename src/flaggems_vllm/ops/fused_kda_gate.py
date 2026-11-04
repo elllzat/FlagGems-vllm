@@ -20,21 +20,25 @@ import triton
 import triton.language as tl
 
 from flaggems_vllm import runtime
-from flaggems_vllm.utils import libentry, libtuner
+from flaggems_vllm.utils import libentry, libtuner, tl_extra_shim
+
+_IS_NVIDIA = runtime.device.vendor_name == "nvidia"
 
 if os.environ.get("FLA_USE_FAST_OPS", "0") == "1":
-    from triton.language.extra.libdevice import fast_logf as log
+    log = getattr(tl_extra_shim, "fast_logf", tl.log)
 else:
     log = tl.log
 
 
 @libentry()
 @libtuner(
-    configs=runtime.get_tuned_config("fused_kda_gate"),
+    configs=runtime.get_tuned_config(
+        "fused_kda_gate_nv" if _IS_NVIDIA else "fused_kda_gate"
+    ),
     key=["T", "H", "D", "HAS_BIAS", "SAFE_GATE"],
     warmup=5,
     rep=50,
-    use_cuda_graph=True,
+    use_cuda_graph=_IS_NVIDIA,
 )
 @triton.jit
 def _fused_kda_gate_kernel(
@@ -73,11 +77,13 @@ def _fused_kda_gate_kernel(
 
 @libentry()
 @libtuner(
-    configs=runtime.get_tuned_config("fused_kda_gate_tiled"),
+    configs=runtime.get_tuned_config(
+        "fused_kda_gate_tiled_nv" if _IS_NVIDIA else "fused_kda_gate_tiled"
+    ),
     key=["T", "H", "D", "HAS_BIAS", "SAFE_GATE"],
     warmup=5,
     rep=50,
-    use_cuda_graph=True,
+    use_cuda_graph=_IS_NVIDIA,
 )
 @triton.jit
 def _fused_kda_gate_tiled_kernel(
@@ -137,8 +143,12 @@ def fused_kda_gate(
     ``beta`` and ``threshold``. Otherwise compute
     ``lower_bound / (1 + exp(-exp(A) * (g + g_bias)))``. A ``None`` lower bound
     means -5.0, and the lower bound has no effect on the softplus branch.
-    Inputs must be contiguous CUDA floating tensors. This is forward only.
+    Inputs must be contiguous floating tensors on the runtime accelerator.
+    Ascend and CPU are unsupported. This is forward only. NVIDIA configurations
+    are tuned with CUDA Graph; other backends use their normal device timer.
     """
+    if runtime.device.vendor_name == "ascend" or runtime.device.name == "cpu":
+        raise NotImplementedError("fused_kda_gate does not support Ascend or CPU")
     if g.ndim < 1 or head_k_dim < 1 or A.numel() < 1:
         raise ValueError("KDA gate requires a nonempty head/key dimension")
     heads = A.numel()
@@ -152,8 +162,8 @@ def fused_kda_gate(
             continue
         if tensor.device != g.device:
             raise ValueError("KDA gate inputs must be on the same device")
-        if tensor.device.type != "cuda":
-            raise NotImplementedError("fused_kda_gate currently supports CUDA")
+        if tensor.device.type != runtime.device.name:
+            raise NotImplementedError("KDA gate requires the runtime accelerator")
         if tensor.dtype not in (
             torch.float16,
             torch.bfloat16,
@@ -161,6 +171,10 @@ def fused_kda_gate(
             torch.float64,
         ):
             raise NotImplementedError("KDA gate requires floating point inputs")
+        if tensor.dtype == torch.float64 and not runtime.device.support_fp64:
+            raise NotImplementedError("KDA gate FP64 is unsupported on this backend")
+        if tensor.dtype == torch.bfloat16 and not runtime.device.support_bf16:
+            raise NotImplementedError("KDA gate BF16 is unsupported on this backend")
         if tensor.layout != torch.strided or not tensor.is_contiguous():
             raise NotImplementedError("KDA gate requires contiguous inputs")
 

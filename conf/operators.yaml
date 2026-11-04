@@ -582,6 +582,22 @@ ops:
       - Quantization
     stages:
       - beta: '5.4'
+  - id: fused_kda_gate
+    description: |
+      Compute the FP32 per-head, per-key-channel log decay gate for GLM5Next KDA.
+      Supports thresholded softplus and bounded sigmoid on contiguous floating
+      inputs, using a portable Triton implementation (excluding Ascend and CPU).
+    for:
+      - vllm.models.glm5next.nvidia.ops.third_party.kda.kernels.fused_kda_gate
+    labels:
+      - fused
+      - vLLM
+      - Attention
+      - NoCPU
+    kind:
+      - NeuralNetwork
+    stages:
+      - beta: '5.4'
   - id: fused_marlin_moe_w4a16
     description: |
       Fused mixture-of-experts computation with 4-bit weights and 16-bit
