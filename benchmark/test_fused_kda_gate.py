@@ -85,7 +85,12 @@ class FusedKdaGateBenchmark(base.Benchmark):
 
 
 @pytest.mark.fused_kda_gate
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="requires CUDA")
+@pytest.mark.skipif(
+    flaggems_vllm.vendor_name == "ascend"
+    or flaggems_vllm.device == "cpu"
+    or not flaggems_vllm.runtime.torch_device_fn.is_available(),
+    reason="requires a supported non-Ascend accelerator",
+)
 def test_fused_kda_gate():
     bench = FusedKdaGateBenchmark(
         op_name="fused_kda_gate",
