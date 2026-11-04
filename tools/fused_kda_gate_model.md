@@ -127,3 +127,34 @@ PYTHONPATH=src:. python tools/fused_kda_gate_tune.py \
 The diagnostic checks every candidate against the Torch formula, then measures
 each already compiled kernel in randomized order. It does not change the host
 dispatch or replace the formal operator benchmark.
+
+### Portable latency measurements
+
+`benchmark/fused_kda_gate_captured_contracts.json` contains the eight deduplicated
+contracts from the original shape capture, including tensor ranks, strides,
+dtypes and scalar arguments. Its provenance is full-architecture execution with
+dummy weights, and it records the original capture SHA256.
+
+Run all GPU commands inside the platform's container, with `PYTHONPATH=src:.`:
+
+~~~bash
+python tools/fused_kda_gate_perf.py --probe --rep 20 --warmup 20 \
+  --modes cudagraph kernel --output probe.json
+python tools/fused_kda_gate_perf.py --rounds 3 --rep 500 --warmup 100 \
+  --modes cudagraph kernel --output latency.json
+~~~
+
+Only request modes that pass the probe. The Graph probe also verifies replay
+after changing the input. Both timers call the same Triton helpers as the common
+benchmark runner; all inputs are checked against an independent Torch formula
+and compiled/tuned before timing. Per-shape results retain each raw round,
+selected configuration and environment. Kernels and their host dispatch are not
+modified by this utility.
+
+Thead may require `--isolated` while its unrelated all-operator imports depend on
+an unavailable TLE module. This loads the actual runtime, LibEntry, configuration
+and gate source, but does not verify the normal public-package import.
+
+This utility reports implementation latency only. NVIDIA speedup remains measured
+with the unchanged dedicated vLLM benchmark. Do not substitute a Torch baseline
+or change NVIDIA's reference configs to manufacture a cross-vendor speedup.

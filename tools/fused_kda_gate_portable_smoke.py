@@ -29,12 +29,9 @@ import torch
 import triton
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--isolated", action="store_true")
-    parser.add_argument("--output", type=Path, required=True)
-    args = parser.parse_args()
-    if args.isolated:
+def load_operator(isolated=False):
+    """Load the real gate/runtime, optionally bypassing unrelated op imports."""
+    if isolated:
         source = Path(__file__).resolve().parents[1] / "src" / "flaggems_vllm"
         for name, path in (
             ("flaggems_vllm", source),
@@ -50,6 +47,16 @@ def main():
     else:
         from flaggems_vllm import fused_kda_gate as gate
         from flaggems_vllm import runtime
+
+    return runtime, gate
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--isolated", action="store_true")
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    runtime, gate = load_operator(args.isolated)
 
     dtypes = [torch.float16, torch.float32]
     if runtime.device.support_bf16:
