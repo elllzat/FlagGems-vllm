@@ -146,7 +146,9 @@ python tools/fused_kda_gate_perf.py --rounds 3 --rep 500 --warmup 100 \
 
 Only request modes that pass the probe. The Graph probe also verifies replay
 after changing the input. Both timers call the same Triton helpers as the common
-benchmark runner; all inputs are checked against an independent Torch formula
+benchmark runner. Graph timing is invoked from an explicit side stream on all
+platforms because some vendor helpers require a caller-owned non-default stream.
+All inputs are checked against an independent Torch formula
 and compiled/tuned before timing. Per-shape results retain each raw round,
 selected configuration and environment. Kernels and their host dispatch are not
 modified by this utility.
