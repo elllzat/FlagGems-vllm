@@ -93,6 +93,12 @@ Other vendors inherit the portable `fused_kda_gate` / `fused_kda_gate_tiled`
 candidates through ConfigLoader unless their own YAML overrides those names.
 NVIDIA uses the wider `fused_kda_gate_nv` / `fused_kda_gate_tiled_nv` candidates
 with `use_cuda_graph=True`, so tuning and acceptance both time Graph replay.
+The retained NVIDIA space has 14 flat and 10 tiled candidates, with 4/8 warps;
+the wider exploratory sweep found no winning 1/2-warp candidates on the eight
+captured contracts. Flat tiles larger than the entire input (rounded to a power
+of two, with a 128-element minimum) are pruned before compilation and timing.
+Autotune uses 20 ms Graphs; the diagnostic defaults to 50 ms and acceptance uses
+the existing benchmark's 500 ms setting.
 Other vendors use normal device timing during tuning; CUDA Graph support is not
 assumed. Changing the candidate set invalidates the old eager-tuned config hash.
 For reproducible experiments, also use a fresh `FLAGGEMS_DB_URL` database.

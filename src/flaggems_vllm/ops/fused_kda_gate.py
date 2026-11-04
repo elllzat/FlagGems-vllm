@@ -30,6 +30,14 @@ else:
     log = tl.log
 
 
+def _prune_flat_configs(configs, named_args, **kwargs):
+    # Larger tiles cannot expose more useful work once they cover the entire
+    # input. In particular, do not compile/tune 8K-element tiles for tiny decode.
+    elements = named_args["T"] * named_args["H"] * named_args["D"]
+    max_block = max(128, triton.next_power_of_2(elements))
+    return [config for config in configs if config.kwargs["BLOCK"] <= max_block]
+
+
 @libentry()
 @libtuner(
     configs=runtime.get_tuned_config(
@@ -37,8 +45,9 @@ else:
     ),
     key=["T", "H", "D", "HAS_BIAS", "SAFE_GATE"],
     warmup=5,
-    rep=50,
+    rep=20,
     use_cuda_graph=_IS_NVIDIA,
+    prune_configs_by={"early_config_prune": _prune_flat_configs},
 )
 @triton.jit
 def _fused_kda_gate_kernel(
@@ -82,7 +91,7 @@ def _fused_kda_gate_kernel(
     ),
     key=["T", "H", "D", "HAS_BIAS", "SAFE_GATE"],
     warmup=5,
-    rep=50,
+    rep=20,
     use_cuda_graph=_IS_NVIDIA,
 )
 @triton.jit
