@@ -33,7 +33,8 @@ else:
     configs=runtime.get_tuned_config("fused_kda_gate"),
     key=["T", "H", "D", "HAS_BIAS", "SAFE_GATE"],
     warmup=5,
-    rep=15,
+    rep=50,
+    use_cuda_graph=True,
 )
 @triton.jit
 def _fused_kda_gate_kernel(
@@ -75,7 +76,8 @@ def _fused_kda_gate_kernel(
     configs=runtime.get_tuned_config("fused_kda_gate_tiled"),
     key=["T", "H", "D", "HAS_BIAS", "SAFE_GATE"],
     warmup=5,
-    rep=15,
+    rep=50,
+    use_cuda_graph=True,
 )
 @triton.jit
 def _fused_kda_gate_tiled_kernel(
