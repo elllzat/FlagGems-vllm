@@ -180,6 +180,8 @@ def main():
         for _ in range(5):
             gate(*inputs)
         device_fn.synchronize()
+        if "cudagraph" in options.modes:
+            check_graph(gate, make_inputs(case, runtime.device.name), device_fn)
         g, A, D = inputs[:3]
         path = "tiled" if g.numel() >= 4 * 1024 * 1024 else "flat"
         entry = (
@@ -195,6 +197,7 @@ def main():
                 D=D,
                 contract=case,
                 path=path,
+                graph_replay_validated="cudagraph" in options.modes,
                 selected_config=config.all_kwargs() if config is not None else None,
                 inputs=inputs,
             )
