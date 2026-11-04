@@ -35,12 +35,13 @@ from triton import cdiv, next_power_of_2
 
 import flaggems_vllm
 from flaggems_vllm import fused_kda_gate as gems_fused_kda_gate
+from flaggems_vllm.utils import tl_extra_shim
 
 from . import accuracy_utils as utils
 from . import conftest as cfg
 
 if os.environ.get("FLA_USE_FAST_OPS", "0") == "1":
-    from triton.language.extra.libdevice import fast_logf as log
+    log = getattr(tl_extra_shim, "fast_logf", tl.log)
 else:
     log = tl.log
 
@@ -170,14 +171,22 @@ def fused_kda_gate(
 
 
 ref_fused_kda_gate = fused_kda_gate
+device_fn = flaggems_vllm.runtime.torch_device_fn
 pytestmark = [
     pytest.mark.fused_kda_gate,
-    pytest.mark.skipif(not torch.cuda.is_available(), reason="requires CUDA"),
+    pytest.mark.skipif(
+        flaggems_vllm.vendor_name == "ascend"
+        or flaggems_vllm.device == "cpu"
+        or not device_fn.is_available(),
+        reason="requires a supported non-Ascend accelerator",
+    ),
 ]
+FP64_DTYPES = [torch.float64] if flaggems_vllm.runtime.device.support_fp64 else []
+BF16_DTYPES = [torch.bfloat16] if flaggems_vllm.runtime.device.support_bf16 else []
 DTYPES = (
-    [torch.bfloat16]
+    BF16_DTYPES or [torch.float16]
     if cfg.QUICK_MODE
-    else [torch.float16, torch.bfloat16, torch.float32]
+    else [torch.float16, *BF16_DTYPES, torch.float32]
 )
 SHAPES = (
     [
@@ -324,7 +333,7 @@ def test_nonfinite_and_threshold(safe_gate):
 
 
 @pytest.mark.parametrize(
-    "dtype", [torch.float16, torch.bfloat16, torch.float32, torch.float64]
+    "dtype", [torch.float16, *BF16_DTYPES, torch.float32, *FP64_DTYPES]
 )
 def test_mixed_parameter_dtypes(dtype):
     g = torch.randn(3, 16, dtype=torch.float32, device=flaggems_vllm.device)
@@ -399,6 +408,30 @@ def test_public_export_and_signature():
     )
 
 
+@pytest.mark.parametrize("backend", ["ascend", "cpu"])
+def test_excluded_backends(monkeypatch, backend):
+    g = torch.empty(1, 16, device=flaggems_vllm.device)
+    A = torch.empty(2, device=g.device)
+    attribute = "vendor_name" if backend == "ascend" else "name"
+    monkeypatch.setattr(flaggems_vllm.runtime.device, attribute, backend)
+    with pytest.raises(NotImplementedError, match="Ascend or CPU"):
+        gems_fused_kda_gate(g, A, 8)
+
+
+@pytest.mark.parametrize(
+    "dtype,capability",
+    [(torch.float64, "support_fp64"), (torch.bfloat16, "support_bf16")],
+)
+def test_unsupported_backend_dtype(monkeypatch, dtype, capability):
+    if not getattr(flaggems_vllm.runtime.device, capability):
+        pytest.skip("cannot create this dtype on the test device")
+    g = torch.empty(1, 16, device=flaggems_vllm.device, dtype=dtype)
+    A = torch.empty(2, device=g.device)
+    monkeypatch.setattr(flaggems_vllm.runtime.device, capability, False)
+    with pytest.raises(NotImplementedError, match="unsupported on this backend"):
+        gems_fused_kda_gate(g, A, 8)
+
+
 @pytest.mark.parametrize("safe_gate", [False, True])
 def test_repeated_metadata_reads_current_values(safe_gate):
     device = flaggems_vllm.device
@@ -410,15 +443,16 @@ def test_repeated_metadata_reads_current_values(safe_gate):
     A.mul_(0.5)
     bias.sub_(0.25)
     # The same metadata must launch with the new values, on the current stream.
-    stream = torch.cuda.Stream()
-    stream.wait_stream(torch.cuda.current_stream())
-    with torch.cuda.stream(stream):
+    stream = device_fn.Stream()
+    stream.wait_stream(device_fn.current_stream())
+    with device_fn.stream(stream):
         assert_output(g, A, 128, bias, safe_gate=safe_gate)
         replacement = torch.randn_like(g)
         assert_output(replacement, A.clone(), 128, bias.clone(), safe_gate=safe_gate)
-    torch.cuda.current_stream().wait_stream(stream)
+    device_fn.current_stream().wait_stream(stream)
 
 
+@pytest.mark.skipif(flaggems_vllm.vendor_name != "nvidia", reason="NVIDIA CUDA Graph")
 def test_cuda_graph_replay_reads_current_values():
     g = torch.randn(8, 1024, device=flaggems_vllm.device, dtype=torch.bfloat16)
     A = torch.randn(8, device=g.device)
@@ -437,15 +471,17 @@ def test_cuda_graph_replay_reads_current_values():
     utils.gems_assert_close(out, utils.to_reference(ref), torch.float32)
 
 
-@pytest.mark.skipif(torch.cuda.device_count() < 2, reason="requires two CUDA devices")
+@pytest.mark.skipif(device_fn.device_count() < 2, reason="requires two devices")
 def test_device_guard():
-    original = torch.cuda.current_device()
-    other = (original + 1) % torch.cuda.device_count()
-    g = torch.randn(8, 1024, device=f"cuda:{other}", dtype=torch.bfloat16)
+    original = device_fn.current_device()
+    other = (original + 1) % device_fn.device_count()
+    g = torch.randn(
+        8, 1024, device=f"{flaggems_vllm.device}:{other}", dtype=torch.bfloat16
+    )
     A = torch.randn(8, device=g.device)
     assert_output(g, A, 128, safe_gate=True)
     assert_output(g, A, 128, safe_gate=True)
-    assert torch.cuda.current_device() == original
+    assert device_fn.current_device() == original
 
 
 @pytest.mark.parametrize("safe_gate", [False, True])
@@ -464,7 +500,7 @@ def test_large_head_count(safe_gate):
 
 
 @pytest.mark.parametrize("safe_gate", [False, True])
-@pytest.mark.parametrize("dtype", DTYPES + ([] if cfg.QUICK_MODE else [torch.float64]))
+@pytest.mark.parametrize("dtype", DTYPES + ([] if cfg.QUICK_MODE else FP64_DTYPES))
 def test_tiled_dtypes_and_tail(dtype, safe_gate):
     T, H, D = 5003, 12, 80
     g = torch.randn(T, H * D, device=flaggems_vllm.device, dtype=dtype)
@@ -533,6 +569,8 @@ def test_captured_model_shapes(case, execution):
     utils.init_seed(42)
     args = captured_gate_inputs(case, flaggems_vllm.device)
     if execution == "cudagraph":
+        if flaggems_vllm.vendor_name != "nvidia":
+            pytest.skip("CUDA Graph replay is validated on NVIDIA")
         stream = torch.cuda.Stream()
         stream.wait_stream(torch.cuda.current_stream())
         with torch.cuda.stream(stream):
