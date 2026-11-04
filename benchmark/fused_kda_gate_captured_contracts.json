@@ -1,0 +1,359 @@
+{
+  "provenance": "native_full_architecture_execution_with_dummy_weights",
+  "trained_weights_loaded": false,
+  "original_capture_sha256": "aa3e01a522323a6a9a1931e4109f5626e8abd301926dd0c3c9a8e137eea35acc",
+  "contracts": [
+    {
+      "operator_g": {
+        "shape": [
+          1,
+          1,
+          2048
+        ],
+        "stride": [
+          2048,
+          2048,
+          1
+        ],
+        "dtype": "torch.bfloat16"
+      },
+      "A": {
+        "shape": [
+          1,
+          1,
+          16,
+          1
+        ],
+        "stride": [
+          16,
+          16,
+          1,
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "g_bias": {
+        "shape": [
+          2048
+        ],
+        "stride": [
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "D": 128,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "safe_gate": true,
+      "lower_bound": -5.0
+    },
+    {
+      "operator_g": {
+        "shape": [
+          1,
+          2,
+          2048
+        ],
+        "stride": [
+          4096,
+          2048,
+          1
+        ],
+        "dtype": "torch.bfloat16"
+      },
+      "A": {
+        "shape": [
+          1,
+          1,
+          16,
+          1
+        ],
+        "stride": [
+          16,
+          16,
+          1,
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "g_bias": {
+        "shape": [
+          2048
+        ],
+        "stride": [
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "D": 128,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "safe_gate": true,
+      "lower_bound": -5.0
+    },
+    {
+      "operator_g": {
+        "shape": [
+          1,
+          128,
+          2048
+        ],
+        "stride": [
+          262144,
+          2048,
+          1
+        ],
+        "dtype": "torch.bfloat16"
+      },
+      "A": {
+        "shape": [
+          1,
+          1,
+          16,
+          1
+        ],
+        "stride": [
+          16,
+          16,
+          1,
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "g_bias": {
+        "shape": [
+          2048
+        ],
+        "stride": [
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "D": 128,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "safe_gate": true,
+      "lower_bound": -5.0
+    },
+    {
+      "operator_g": {
+        "shape": [
+          1,
+          129,
+          2048
+        ],
+        "stride": [
+          264192,
+          2048,
+          1
+        ],
+        "dtype": "torch.bfloat16"
+      },
+      "A": {
+        "shape": [
+          1,
+          1,
+          16,
+          1
+        ],
+        "stride": [
+          16,
+          16,
+          1,
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "g_bias": {
+        "shape": [
+          2048
+        ],
+        "stride": [
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "D": 128,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "safe_gate": true,
+      "lower_bound": -5.0
+    },
+    {
+      "operator_g": {
+        "shape": [
+          1,
+          257,
+          2048
+        ],
+        "stride": [
+          526336,
+          2048,
+          1
+        ],
+        "dtype": "torch.bfloat16"
+      },
+      "A": {
+        "shape": [
+          1,
+          1,
+          16,
+          1
+        ],
+        "stride": [
+          16,
+          16,
+          1,
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "g_bias": {
+        "shape": [
+          2048
+        ],
+        "stride": [
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "D": 128,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "safe_gate": true,
+      "lower_bound": -5.0
+    },
+    {
+      "operator_g": {
+        "shape": [
+          1,
+          1024,
+          2048
+        ],
+        "stride": [
+          2097152,
+          2048,
+          1
+        ],
+        "dtype": "torch.bfloat16"
+      },
+      "A": {
+        "shape": [
+          1,
+          1,
+          16,
+          1
+        ],
+        "stride": [
+          16,
+          16,
+          1,
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "g_bias": {
+        "shape": [
+          2048
+        ],
+        "stride": [
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "D": 128,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "safe_gate": true,
+      "lower_bound": -5.0
+    },
+    {
+      "operator_g": {
+        "shape": [
+          1,
+          1025,
+          2048
+        ],
+        "stride": [
+          2099200,
+          2048,
+          1
+        ],
+        "dtype": "torch.bfloat16"
+      },
+      "A": {
+        "shape": [
+          1,
+          1,
+          16,
+          1
+        ],
+        "stride": [
+          16,
+          16,
+          1,
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "g_bias": {
+        "shape": [
+          2048
+        ],
+        "stride": [
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "D": 128,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "safe_gate": true,
+      "lower_bound": -5.0
+    },
+    {
+      "operator_g": {
+        "shape": [
+          1,
+          2048,
+          2048
+        ],
+        "stride": [
+          4194304,
+          2048,
+          1
+        ],
+        "dtype": "torch.bfloat16"
+      },
+      "A": {
+        "shape": [
+          1,
+          1,
+          16,
+          1
+        ],
+        "stride": [
+          16,
+          16,
+          1,
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "g_bias": {
+        "shape": [
+          2048
+        ],
+        "stride": [
+          1
+        ],
+        "dtype": "torch.float32"
+      },
+      "D": 128,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "safe_gate": true,
+      "lower_bound": -5.0
+    }
+  ]
+}
