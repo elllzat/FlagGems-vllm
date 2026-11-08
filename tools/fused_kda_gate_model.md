@@ -87,8 +87,10 @@ matrix input mode. The captured-contract accuracy test checks both eager and
 CUDA Graph replay, including changed input values after capture.
 
 The custom metadata/compiled-launch cache has been removed at the user's request.
-The portable Triton kernels use the runtime device guard and math shim. Ascend
-and CPU are explicitly unsupported; FP64/BF16 follow backend capabilities.
+The portable Triton kernels use the runtime device guard and math shim.
+FP64/BF16 follow backend capabilities. Ascend uses fixed vector-core tiles
+selected from measurements on the captured contracts, with a flat path for
+unaligned widths. CPU is unsupported.
 Other vendors inherit the portable `fused_kda_gate` / `fused_kda_gate_tiled`
 candidates through ConfigLoader unless their own YAML overrides those names.
 NVIDIA uses the wider `fused_kda_gate_nv` / `fused_kda_gate_tiled_nv` candidates
@@ -179,3 +181,7 @@ It preserves all 24 original configs (including 32 warps), decorators, equations
 and autotune keys. It does not filter failing configs or replace the reference.
 Compilation failures are saved with their stage and traceback, without claiming
 a speedup. Only run the full comparison after a successful strict probe.
+
+On Ascend, the comparison uses the same `do_bench_npu` profiler as the
+repository benchmark instead of CUDA Graph. To measure the Ascend implementation
+alone, use `fused_kda_gate_perf.py --modes npu`.
