@@ -92,6 +92,7 @@ def main():
     if options.rounds < 1 or options.rep < 1:
         parser.error("rounds and rep must be positive")
     runtime, gate = load_operator(options.isolated)
+    mode = "npu" if runtime.device.vendor_name == "ascend" else "cudagraph"
     report = dict(
         status="running",
         vendor=runtime.device.vendor_name,
@@ -99,9 +100,9 @@ def main():
         torch=torch.__version__,
         triton=triton.__version__,
         isolated=options.isolated,
-        mode="cudagraph",
+        mode=mode,
         rounds=options.rounds,
-        rep_ms=options.rep,
+        rep_ms=options.rep if mode == "cudagraph" else None,
     )
 
     def save():
@@ -125,13 +126,14 @@ def main():
             check_output(baseline(*inputs), inputs)
             stage = "gems_compile_and_validate"
             check_output(gate(*inputs), inputs)
-            stage = "graph_replay_validate"
-            for function in (baseline, gate):
-                check_graph(
-                    function,
-                    make_inputs(case, runtime.device.name),
-                    runtime.torch_device_fn,
-                )
+            if mode == "cudagraph":
+                stage = "graph_replay_validate"
+                for function in (baseline, gate):
+                    check_graph(
+                        function,
+                        make_inputs(case, runtime.device.name),
+                        runtime.torch_device_fn,
+                    )
             g, A, D = inputs[:3]
             prepared.append(
                 (
@@ -157,7 +159,7 @@ def main():
                     functions.reverse()
                 for label, function in functions:
                     pair[label] = measure(
-                        lambda: function(*inputs), "cudagraph", options.rep, 100
+                        lambda: function(*inputs), mode, options.rep, 100
                     )
                 row["round_baseline_us"].append(pair["baseline"])
                 row["round_gems_us"].append(pair["gems"])
