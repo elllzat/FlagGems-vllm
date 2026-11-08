@@ -699,7 +699,7 @@ ops:
     description: |
       Compute the FP32 per-head, per-key-channel log decay gate for GLM5Next KDA.
       Supports thresholded softplus and bounded sigmoid on contiguous floating
-      inputs, using a portable Triton implementation (excluding Ascend and CPU).
+      inputs, with portable Triton GPU kernels and an Ascend vector-core path.
     for:
       - vllm.models.glm5next.nvidia.ops.third_party.kda.kernels.fused_kda_gate
     labels:

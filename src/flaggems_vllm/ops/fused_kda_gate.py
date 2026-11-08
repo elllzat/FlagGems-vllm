@@ -137,6 +137,57 @@ def _fused_kda_gate_tiled_kernel(
     tl.store(Y + offsets, result, mask=mask)
 
 
+@triton.jit
+def _fused_kda_gate_ascend_kernel(
+    G,
+    A,
+    BIAS,
+    Y,
+    T: tl.constexpr,
+    H: tl.constexpr,
+    D: tl.constexpr,
+    BETA: tl.constexpr,
+    THRESHOLD: tl.constexpr,
+    SAFE_GATE: tl.constexpr,
+    LOWER_BOUND: tl.constexpr,
+    HAS_BIAS: tl.constexpr,
+    BT: tl.constexpr,
+    BLOCK: tl.constexpr,
+):
+    pid = tl.program_id(0)
+    if T * H * D >= 2**31:
+        pid = pid.to(tl.int64)
+    if BT > 0:
+        head = pid % H
+        rows = (pid // H) * BT + tl.arange(0, BT)
+        cols = head * D + tl.arange(0, D)
+        offsets = rows[:, None] * (H * D) + cols[None, :]
+        mask = rows[:, None] < T
+        value = tl.load(G + offsets, mask, other=0).to(tl.float32)
+        if HAS_BIAS:
+            bias = tl.load(BIAS + cols).to(tl.float32)
+            value += bias[None, :]
+        scale = tl.exp(tl.load(A + head).to(tl.float32))
+    else:
+        # Flat output blocks keep stores disjoint even for unaligned head widths.
+        offsets = pid * BLOCK + tl.arange(0, BLOCK)
+        mask = offsets < T * H * D
+        cols = offsets % (H * D)
+        value = tl.load(G + offsets, mask, other=0).to(tl.float32)
+        if HAS_BIAS:
+            value += tl.load(BIAS + cols, mask, other=0).to(tl.float32)
+        scale = tl.exp(tl.load(A + cols // D, mask, other=0).to(tl.float32))
+    if SAFE_GATE:
+        result = LOWER_BOUND / (1.0 + tl.exp(-(scale * value)))
+    else:
+        scaled = value * BETA
+        softplus = tl.where(
+            scaled > THRESHOLD, value, (1.0 / BETA) * tl.log(1.0 + tl.exp(scaled))
+        )
+        result = -scale * softplus
+    tl.store(Y + offsets, result, mask)
+
+
 def fused_kda_gate(
     g: torch.Tensor,
     A: torch.Tensor,
@@ -155,11 +206,11 @@ def fused_kda_gate(
     ``lower_bound / (1 + exp(-exp(A) * (g + g_bias)))``. A ``None`` lower bound
     means -5.0, and the lower bound has no effect on the softplus branch.
     Inputs must be contiguous floating tensors on the runtime accelerator.
-    Ascend and CPU are unsupported. This is forward only. NVIDIA configurations
-    are tuned with CUDA Graph; other backends use their normal device timer.
+    CPU is unsupported. This is forward only. NVIDIA configurations are tuned
+    with CUDA Graph, and Ascend uses fixed vector-core tiles.
     """
-    if runtime.device.vendor_name == "ascend" or runtime.device.name == "cpu":
-        raise NotImplementedError("fused_kda_gate does not support Ascend or CPU")
+    if runtime.device.name == "cpu":
+        raise NotImplementedError("fused_kda_gate does not support CPU")
     if g.ndim < 1 or head_k_dim < 1 or A.numel() < 1:
         raise ValueError("KDA gate requires a nonempty head/key dimension")
     heads = A.numel()
@@ -206,7 +257,22 @@ def fused_kda_gate(
         g_bias is not None,
     )
     with runtime.torch_device_fn.device(g.device):
-        if g.numel() >= 4 * 1024 * 1024:
+        if runtime.device.vendor_name == "ascend":
+            aligned_head = (
+                16 <= head_k_dim <= 256
+                and head_k_dim == triton.next_power_of_2(head_k_dim)
+            )
+            bt = (1 if tokens <= 2 else 32) if aligned_head else 0
+            block = 256
+            grid = (
+                triton.cdiv(tokens, bt) * heads
+                if aligned_head
+                else triton.cdiv(g.numel(), block)
+            )
+            _fused_kda_gate_ascend_kernel[(grid,)](
+                g, A, g_bias, output, *constants, BT=bt, BLOCK=block
+            )
+        elif g.numel() >= 4 * 1024 * 1024:
             bd = triton.next_power_of_2(head_k_dim)
             _fused_kda_gate_tiled_kernel[
                 lambda meta: (triton.cdiv(tokens, meta["BT"]) * heads,)

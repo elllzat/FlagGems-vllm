@@ -175,10 +175,8 @@ device_fn = flaggems_vllm.runtime.torch_device_fn
 pytestmark = [
     pytest.mark.fused_kda_gate,
     pytest.mark.skipif(
-        flaggems_vllm.vendor_name == "ascend"
-        or flaggems_vllm.device == "cpu"
-        or not device_fn.is_available(),
-        reason="requires a supported non-Ascend accelerator",
+        flaggems_vllm.device == "cpu" or not device_fn.is_available(),
+        reason="requires a supported accelerator",
     ),
 ]
 FP64_DTYPES = [torch.float64] if flaggems_vllm.runtime.device.support_fp64 else []
@@ -412,13 +410,11 @@ def test_public_export_and_signature():
     )
 
 
-@pytest.mark.parametrize("backend", ["ascend", "cpu"])
-def test_excluded_backends(monkeypatch, backend):
+def test_cpu_backend_is_unsupported(monkeypatch):
     g = torch.empty(1, 16, device=flaggems_vllm.device)
     A = torch.empty(2, device=g.device)
-    attribute = "vendor_name" if backend == "ascend" else "name"
-    monkeypatch.setattr(flaggems_vllm.runtime.device, attribute, backend)
-    with pytest.raises(NotImplementedError, match="Ascend or CPU"):
+    monkeypatch.setattr(flaggems_vllm.runtime.device, "name", "cpu")
+    with pytest.raises(NotImplementedError, match="does not support CPU"):
         gems_fused_kda_gate(g, A, 8)
 
 
