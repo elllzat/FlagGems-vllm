@@ -262,7 +262,12 @@ def fused_kda_gate(
                 16 <= head_k_dim <= 256
                 and head_k_dim == triton.next_power_of_2(head_k_dim)
             )
-            bt = (1 if tokens <= 2 else 32) if aligned_head else 0
+            bt = 0
+            if aligned_head:
+                # Fill each tile with both decode tokens when possible. For
+                # prefill, amortize strided transfers with wider token tiles.
+                max_bt = (64 if tokens <= 512 else 128) if safe_gate else 32
+                bt = min(triton.next_power_of_2(tokens), max_bt, 16384 // head_k_dim)
             block = 256
             grid = (
                 triton.cdiv(tokens, bt) * heads
