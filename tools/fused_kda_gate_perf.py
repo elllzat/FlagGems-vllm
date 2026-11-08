@@ -96,6 +96,10 @@ def check_graph(gate, inputs, device_fn):
 
 
 def measure(fn, mode, rep, warmup):
+    if mode == "npu":
+        from triton.backends.ascend.testing import do_bench_npu
+
+        return do_bench_npu(fn) * 1000
     if mode == "cudagraph":
         # Some vendor helpers require a caller-owned non-default stream.
         # Use the same caller context on every platform, retaining each
@@ -127,7 +131,7 @@ def main():
     parser.add_argument(
         "--modes",
         nargs="+",
-        choices=("cudagraph", "kernel"),
+        choices=("cudagraph", "kernel", "npu"),
         default=["cudagraph", "kernel"],
     )
     parser.add_argument("--rounds", type=int, default=3)
@@ -191,13 +195,16 @@ def main():
         if "cudagraph" in options.modes:
             check_graph(gate, make_inputs(case, runtime.device.name), device_fn)
         g, A, D = inputs[:3]
-        path = "tiled" if g.numel() >= 4 * 1024 * 1024 else "flat"
-        entry = (
-            module._fused_kda_gate_tiled_kernel
-            if path == "tiled"
-            else module._fused_kda_gate_kernel
-        )
-        config = getattr(entry.fn, "best_config", None)
+        if runtime.device.vendor_name == "ascend":
+            path, config = "ascend", None
+        else:
+            path = "tiled" if g.numel() >= 4 * 1024 * 1024 else "flat"
+            entry = (
+                module._fused_kda_gate_tiled_kernel
+                if path == "tiled"
+                else module._fused_kda_gate_kernel
+            )
+            config = getattr(entry.fn, "best_config", None)
         prepared.append(
             dict(
                 T=g.numel() // (A.numel() * D),
