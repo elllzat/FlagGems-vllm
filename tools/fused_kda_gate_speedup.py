@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Probe/measure the unchanged pinned vLLM gate on other vendor devices.
+"""Probe/measure the pinned vLLM gate on other vendor devices.
 
 Only the original reference definitions and their candidate-list assignments are
-loaded from the test source. No reference functions, decorators or configs are
-rewritten, filtered or overridden. Unsupported compilation is reported without a
-speedup. This avoids importing unrelated pytest/package code on isolated backends.
+loaded from the test source. The default run keeps all candidates. An explicit
+warp limit filters the runner's in-memory candidate list for a separately labeled
+compatibility comparison. The reference source is never rewritten.
 """
 
 import argparse
@@ -86,11 +86,18 @@ def main():
     parser.add_argument("--probe", action="store_true")
     parser.add_argument("--rounds", type=int, default=3)
     parser.add_argument("--rep", type=int, default=500)
+    parser.add_argument(
+        "--baseline-max-warps",
+        type=int,
+        help="Limit reference candidates for a compatibility measurement",
+    )
     options = parser.parse_args()
     if os.environ.get("FLA_USE_FAST_OPS", "0") != "0":
         parser.error("this pinned-reference runner requires FLA_USE_FAST_OPS=0")
     if options.rounds < 1 or options.rep < 1:
         parser.error("rounds and rep must be positive")
+    if options.baseline_max_warps is not None and options.baseline_max_warps < 1:
+        parser.error("baseline-max-warps must be positive")
     runtime, gate = load_operator(options.isolated)
     mode = "npu" if runtime.device.vendor_name == "ascend" else "cudagraph"
     report = dict(
@@ -112,6 +119,21 @@ def main():
     stage = "load_reference"
     try:
         baseline, kernel, report["reference"] = load_pinned_reference()
+        if options.baseline_max_warps is not None:
+            original_configs = kernel.configs
+            kernel.configs = [
+                config
+                for config in original_configs
+                if config.num_warps <= options.baseline_max_warps
+            ]
+            if not kernel.configs:
+                raise ValueError("No reference candidates fit the warp limit")
+            report["reference"].update(
+                max_warps=options.baseline_max_warps,
+                original_candidate_count=len(original_configs),
+                candidates_unchanged=len(kernel.configs) == len(original_configs),
+                candidates=[config.all_kwargs() for config in kernel.configs],
+            )
         fixture = (
             Path(__file__).resolve().parents[1]
             / "benchmark/fused_kda_gate_captured_contracts.json"
