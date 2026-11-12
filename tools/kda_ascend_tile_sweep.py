@@ -65,7 +65,14 @@ def sweep():
     ]
     results = {}
     output_path = os.environ["KDA_SWEEP_OUT"]
-    test_cases = [(c["T"], c["H"], c["D"], c["safe_gate"], make_inputs(c, runtime.device.name)) for c in contracts if c["T"] > 2]
+    test_cases = []
+    for case in contracts:
+        inputs = make_inputs(case, runtime.device.name)
+        g, a, d = inputs[:3]
+        h = a.numel()
+        t = g.numel() // (h * d)
+        if t > 2:
+            test_cases.append((t, h, d, case["safe_gate"], inputs))
     for t, h, d, safe in ((37, 12, 80, True), (257, 12, 80, False), (1025, 12, 80, True)):
         g = torch.randn(t, h * d, dtype=torch.bfloat16, device=runtime.device.name)
         a = torch.randn(h, dtype=torch.float32, device=runtime.device.name)
