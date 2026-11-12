@@ -152,6 +152,7 @@ def _fused_kda_gate_ascend_kernel(
     LOWER_BOUND: tl.constexpr,
     HAS_BIAS: tl.constexpr,
     BT: tl.constexpr,
+    BH: tl.constexpr,
     BD: tl.constexpr,
     BLOCK: tl.constexpr,
 ):
@@ -159,19 +160,27 @@ def _fused_kda_gate_ascend_kernel(
     if T * H * D >= 2**31:
         pid = pid.to(tl.int64)
     if BT > 0:
-        head = pid % H
-        rows = (pid // H) * BT + tl.arange(0, BT)
-        channels = tl.arange(0, BD)
+        head_groups: tl.constexpr = H // BH
+        head = (pid % head_groups) * BH
+        rows = (pid // head_groups) * BT + tl.arange(0, BT)
+        channels = tl.arange(0, BH * BD)
         cols = head * D + channels
         offsets = rows[:, None] * (H * D) + cols[None, :]
         mask = rows[:, None] < T
         if BD != D:
+            # Only single-head tiles need to mask padding within the row.
             mask = mask & (channels[None, :] < D)
         value = tl.load(G + offsets, mask, other=0).to(tl.float32)
         if HAS_BIAS:
-            bias = tl.load(BIAS + cols, channels < D, other=0).to(tl.float32)
+            bias = tl.load(BIAS + cols, channels < BH * D, other=0).to(tl.float32)
             value += bias[None, :]
-        scale = tl.exp(tl.load(A + head).to(tl.float32))
+        if BH == 1:
+            scale = tl.exp(tl.load(A + head).to(tl.float32))
+        else:
+            heads = head + tl.arange(0, BH)
+            head_scale = tl.exp(tl.load(A + heads).to(tl.float32))
+            scale = tl.reshape(tl.broadcast_to(head_scale[:, None], (BH, D)), (BH * D,))
+            scale = scale[None, :]
     else:
         # Flat output blocks keep stores disjoint even for unaligned head widths.
         offsets = pid * BLOCK + tl.arange(0, BLOCK)
@@ -266,21 +275,25 @@ def fused_kda_gate(
             # transfers. Pad the vector width, but keep the original row stride.
             aligned_head = head_k_dim <= 256 and head_k_dim % 16 == 0
             bt = 0
+            bh = 1
             bd = 0
             if aligned_head:
                 bd = triton.next_power_of_2(head_k_dim)
-                # Fill each tile with both decode tokens when possible. For
-                # prefill, amortize strided transfers with wider token tiles.
-                max_bt = (64 if tokens <= 512 else 128) if safe_gate else 32
-                bt = min(triton.next_power_of_2(tokens), max_bt, 16384 // bd)
+                if safe_gate and heads == 16 and head_k_dim == 128 and tokens > 128:
+                    # The model's prefill tile transfers eight adjacent heads
+                    # per row and reuses their bias and exp(A) across tokens.
+                    bh, bt = 8, 16
+                else:
+                    max_bt = (64 if tokens <= 512 else 128) if safe_gate else 32
+                    bt = min(triton.next_power_of_2(tokens), max_bt, 16384 // bd)
             block = 256
             grid = (
-                triton.cdiv(tokens, bt) * heads
+                triton.cdiv(tokens, bt) * (heads // bh)
                 if aligned_head
                 else triton.cdiv(g.numel(), block)
             )
             _fused_kda_gate_ascend_kernel[(grid,)](
-                g, A, g_bias, output, *constants, BT=bt, BD=bd, BLOCK=block
+                g, A, g_bias, output, *constants, BT=bt, BH=bh, BD=bd, BLOCK=block
             )
         elif g.numel() >= 4 * 1024 * 1024:
             bd = triton.next_power_of_2(head_k_dim)
