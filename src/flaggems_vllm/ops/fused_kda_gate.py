@@ -152,6 +152,7 @@ def _fused_kda_gate_ascend_kernel(
     LOWER_BOUND: tl.constexpr,
     HAS_BIAS: tl.constexpr,
     BT: tl.constexpr,
+    BD: tl.constexpr,
     BLOCK: tl.constexpr,
 ):
     pid = tl.program_id(0)
@@ -160,12 +161,15 @@ def _fused_kda_gate_ascend_kernel(
     if BT > 0:
         head = pid % H
         rows = (pid // H) * BT + tl.arange(0, BT)
-        cols = head * D + tl.arange(0, D)
+        channels = tl.arange(0, BD)
+        cols = head * D + channels
         offsets = rows[:, None] * (H * D) + cols[None, :]
         mask = rows[:, None] < T
+        if BD != D:
+            mask = mask & (channels[None, :] < D)
         value = tl.load(G + offsets, mask, other=0).to(tl.float32)
         if HAS_BIAS:
-            bias = tl.load(BIAS + cols).to(tl.float32)
+            bias = tl.load(BIAS + cols, channels < D, other=0).to(tl.float32)
             value += bias[None, :]
         scale = tl.exp(tl.load(A + head).to(tl.float32))
     else:
@@ -258,16 +262,17 @@ def fused_kda_gate(
     )
     with runtime.torch_device_fn.device(g.device):
         if runtime.device.vendor_name == "ascend":
-            aligned_head = (
-                16 <= head_k_dim <= 256
-                and head_k_dim == triton.next_power_of_2(head_k_dim)
-            )
+            # Head boundaries must align to a 32-byte block for FP16/BF16
+            # transfers. Pad the vector width, but keep the original row stride.
+            aligned_head = head_k_dim <= 256 and head_k_dim % 16 == 0
             bt = 0
+            bd = 0
             if aligned_head:
+                bd = triton.next_power_of_2(head_k_dim)
                 # Fill each tile with both decode tokens when possible. For
                 # prefill, amortize strided transfers with wider token tiles.
                 max_bt = (64 if tokens <= 512 else 128) if safe_gate else 32
-                bt = min(triton.next_power_of_2(tokens), max_bt, 16384 // head_k_dim)
+                bt = min(triton.next_power_of_2(tokens), max_bt, 16384 // bd)
             block = 256
             grid = (
                 triton.cdiv(tokens, bt) * heads
@@ -275,7 +280,7 @@ def fused_kda_gate(
                 else triton.cdiv(g.numel(), block)
             )
             _fused_kda_gate_ascend_kernel[(grid,)](
-                g, A, g_bias, output, *constants, BT=bt, BLOCK=block
+                g, A, g_bias, output, *constants, BT=bt, BD=bd, BLOCK=block
             )
         elif g.numel() >= 4 * 1024 * 1024:
             bd = triton.next_power_of_2(head_k_dim)

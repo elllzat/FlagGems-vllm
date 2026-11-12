@@ -362,8 +362,9 @@ def test_prefill(T):
 
 @pytest.mark.skipif(flaggems_vllm.vendor_name != "ascend", reason="Ascend vector tile")
 @pytest.mark.parametrize("dtype", [*BF16_DTYPES, torch.float32])
-def test_ascend_wide_head_prefill(dtype):
-    T, H, D = 1025, 3, 256
+@pytest.mark.parametrize("D", [80, 256])
+def test_ascend_vector_tile_prefill(dtype, D):
+    T, H = 1025, 3
     g = torch.randn(T, H * D, device=flaggems_vllm.device, dtype=dtype)
     A = torch.randn(H, device=g.device)
     bias = torch.randn(H * D, device=g.device)
