@@ -26,6 +26,7 @@ import json
 import os
 import statistics
 import sys
+import time
 import traceback
 import types
 from pathlib import Path
@@ -87,6 +88,23 @@ def load_pinned_reference():
     return module.fused_kda_gate, module.kda_gate_fwd_kernel, metadata
 
 
+def measure_operator(fn, device_fn, rep_ms):
+    # Match benchmark/base.py's operator mode: time dispatch, allocation and
+    # execution over a batch, with synchronization at both batch boundaries.
+    def elapsed_seconds(calls):
+        device_fn.synchronize()
+        start = time.perf_counter()
+        for _ in range(calls):
+            fn()
+        device_fn.synchronize()
+        return time.perf_counter() - start
+
+    seconds_per_call = elapsed_seconds(5) / 5
+    elapsed_seconds(max(1, int(0.02 / seconds_per_call)))
+    calls = max(1, int(rep_ms / 1000 / seconds_per_call))
+    return elapsed_seconds(calls) * 1e6 / calls
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
@@ -94,6 +112,9 @@ def main():
     parser.add_argument("--probe", action="store_true")
     parser.add_argument("--rounds", type=int, default=3)
     parser.add_argument("--rep", type=int, default=500)
+    parser.add_argument(
+        "--operator", action="store_true", help="Include host dispatch and allocation"
+    )
     parser.add_argument(
         "--baseline-max-warps",
         type=int,
@@ -107,7 +128,14 @@ def main():
     if options.baseline_max_warps is not None and options.baseline_max_warps < 1:
         parser.error("baseline-max-warps must be positive")
     runtime, gate = load_operator(options.isolated)
-    mode = {"npu": "npu", "musa": "musagraph"}.get(runtime.device.name, "cudagraph")
+    mode = (
+        "operator"
+        if options.operator
+        else {
+            "npu": "npu",
+            "musa": "musagraph",
+        }.get(runtime.device.name, "cudagraph")
+    )
     report = dict(
         status="running",
         vendor=runtime.device.vendor_name,
@@ -117,7 +145,7 @@ def main():
         isolated=options.isolated,
         mode=mode,
         rounds=options.rounds,
-        rep_ms=options.rep if mode == "cudagraph" else None,
+        rep_ms=options.rep if mode in ("cudagraph", "operator") else None,
         flagtree_aabs=os.environ.get("FLAGTREE_AABS"),
     )
     if mode == "musagraph":
@@ -191,9 +219,16 @@ def main():
                 if (repeat + index) % 2:
                     functions.reverse()
                 for label, function in functions:
-                    pair[label] = measure(
-                        lambda: function(*inputs), mode, options.rep, 100
-                    )
+
+                    def invoke():
+                        return function(*inputs)
+
+                    if options.operator:
+                        pair[label] = measure_operator(
+                            invoke, runtime.torch_device_fn, options.rep
+                        )
+                    else:
+                        pair[label] = measure(invoke, mode, options.rep, 100)
                 row["round_baseline_us"].append(pair["baseline"])
                 row["round_gems_us"].append(pair["gems"])
                 row["round_speedup"].append(pair["baseline"] / pair["gems"])
