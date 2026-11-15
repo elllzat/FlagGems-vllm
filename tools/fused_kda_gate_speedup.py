@@ -47,8 +47,10 @@ from tools.fused_kda_gate_perf import (
 from tools.fused_kda_gate_portable_smoke import load_operator
 
 
-def load_pinned_reference():
-    path = Path(__file__).resolve().parents[1] / "tests/test_fused_kda_gate.py"
+def load_pinned_reference(path=None, *, is_amd=False):
+    pinned = path is None
+    if pinned:
+        path = Path(__file__).resolve().parents[1] / "tests/test_fused_kda_gate.py"
     source = path.read_text(encoding="utf-8")
     names = {"BT_LIST_AUTOTUNE", "NUM_WARPS_AUTOTUNE"}
     functions = {"kda_gate_fwd_kernel", "fused_kda_gate"}
@@ -73,13 +75,19 @@ def load_pinned_reference():
         cdiv=triton.cdiv,
         next_power_of_2=triton.next_power_of_2,
         log=tl.log,
+        is_amd=is_amd,
     )
     sys.modules[module.__name__] = module
     exec(compile(tree, str(path), "exec"), module.__dict__)
     configs = module.kda_gate_fwd_kernel.configs
     assert len(configs) == 24
     metadata = dict(
-        source="tests/test_fused_kda_gate.py: pinned GLM5Next vLLM reference",
+        source=(
+            "tests/test_fused_kda_gate.py: pinned GLM5Next vLLM reference"
+            if pinned
+            else str(path)
+        ),
+        source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
         ast_sha256=digest,
         function_and_decorator_asts_unchanged=True,
         candidates_unchanged=True,
@@ -112,6 +120,9 @@ def main():
     parser.add_argument("--probe", action="store_true")
     parser.add_argument("--rounds", type=int, default=3)
     parser.add_argument("--rep", type=int, default=500)
+    parser.add_argument(
+        "--reference-source", type=Path, help="Vendor vLLM KDA source with safe gate"
+    )
     parser.add_argument(
         "--operator", action="store_true", help="Include host dispatch and allocation"
     )
@@ -157,7 +168,10 @@ def main():
 
     stage = "load_reference"
     try:
-        baseline, kernel, report["reference"] = load_pinned_reference()
+        baseline, kernel, report["reference"] = load_pinned_reference(
+            options.reference_source,
+            is_amd=runtime.device.vendor_name in ("amd", "hygon"),
+        )
         if options.baseline_max_warps is not None:
             original_configs = kernel.configs
             kernel.configs = [
