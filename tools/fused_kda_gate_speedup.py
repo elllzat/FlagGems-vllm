@@ -34,7 +34,13 @@ import torch
 import triton
 import triton.language as tl
 
-from tools.fused_kda_gate_perf import check_graph, check_output, make_inputs, measure
+from tools.fused_kda_gate_perf import (
+    GRAPH_MODES,
+    check_graph,
+    check_output,
+    make_inputs,
+    measure,
+)
 from tools.fused_kda_gate_portable_smoke import load_operator
 
 
@@ -99,7 +105,7 @@ def main():
     if options.baseline_max_warps is not None and options.baseline_max_warps < 1:
         parser.error("baseline-max-warps must be positive")
     runtime, gate = load_operator(options.isolated)
-    mode = "npu" if runtime.device.vendor_name == "ascend" else "cudagraph"
+    mode = {"npu": "npu", "musa": "musagraph"}.get(runtime.device.name, "cudagraph")
     report = dict(
         status="running",
         vendor=runtime.device.vendor_name,
@@ -148,7 +154,7 @@ def main():
             check_output(baseline(*inputs), inputs)
             stage = "gems_compile_and_validate"
             check_output(gate(*inputs), inputs)
-            if mode == "cudagraph":
+            if mode in GRAPH_MODES:
                 stage = "graph_replay_validate"
                 for function in (baseline, gate):
                     check_graph(

@@ -32,6 +32,8 @@ import triton
 
 from tools.fused_kda_gate_portable_smoke import load_operator
 
+GRAPH_MODES = ("cudagraph", "musagraph")
+
 
 def make_inputs(case, device):
     torch.manual_seed(42)
@@ -86,8 +88,11 @@ def check_graph(gate, inputs, device_fn):
     with device_fn.stream(stream):
         gate(*inputs)
     device_fn.current_stream().wait_stream(stream)
-    graph = torch.cuda.CUDAGraph()
-    with torch.cuda.graph(graph):
+    graph_cls = (
+        device_fn.MUSAGraph if inputs[0].device.type == "musa" else device_fn.CUDAGraph
+    )
+    graph = graph_cls()
+    with device_fn.graph(graph):
         output = gate(*inputs)
     inputs[0].add_(0.25)
     graph.replay()
@@ -100,6 +105,28 @@ def measure(fn, mode, rep, warmup):
         from triton.backends.ascend.testing import do_bench_npu
 
         return do_bench_npu(fn) * 1000
+    if mode == "musagraph":
+        # The FlagTree build on MUSA uses CUDA-specific APIs in its timer.
+        # Batch launches in a native MUSA graph to amortize replay overhead.
+        device_fn = torch.musa
+        calls = 256
+        fn()
+        device_fn.synchronize()
+        graph = device_fn.MUSAGraph()
+        with device_fn.graph(graph):
+            for _ in range(calls):
+                fn()
+        graph.replay()
+        samples = []
+        for _ in range(10):
+            start = device_fn.Event(enable_timing=True)
+            end = device_fn.Event(enable_timing=True)
+            start.record()
+            graph.replay()
+            end.record()
+            end.synchronize()
+            samples.append(start.elapsed_time(end) * 1000 / calls)
+        return statistics.median(samples)
     if mode == "cudagraph":
         # Some vendor helpers require a caller-owned non-default stream.
         # Use the same caller context on every platform, retaining each
@@ -131,7 +158,7 @@ def main():
     parser.add_argument(
         "--modes",
         nargs="+",
-        choices=("cudagraph", "kernel", "npu"),
+        choices=(*GRAPH_MODES, "kernel", "npu"),
         default=["cudagraph", "kernel"],
     )
     parser.add_argument("--rounds", type=int, default=3)
@@ -141,6 +168,10 @@ def main():
     if min(options.rounds, options.rep, options.warmup) < 1:
         parser.error("rounds, rep and warmup must be positive")
     runtime, gate = load_operator(options.isolated)
+    if runtime.device.name == "musa":
+        options.modes = [
+            "musagraph" if mode == "cudagraph" else mode for mode in options.modes
+        ]
     device_fn = runtime.torch_device_fn
     payload = json.loads(options.shapes.read_text(encoding="utf-8"))
     report = dict(
@@ -171,7 +202,7 @@ def main():
             try:
                 inputs = make_inputs(payload["contracts"][0], runtime.device.name)
                 check_output(gate(*inputs), inputs)
-                if mode == "cudagraph":
+                if mode in GRAPH_MODES:
                     check_graph(gate, inputs, device_fn)
                 elapsed = measure(
                     lambda: gate(*inputs), mode, options.rep, options.warmup
@@ -192,7 +223,7 @@ def main():
         for _ in range(5):
             gate(*inputs)
         device_fn.synchronize()
-        if "cudagraph" in options.modes:
+        if any(mode in GRAPH_MODES for mode in options.modes):
             check_graph(gate, make_inputs(case, runtime.device.name), device_fn)
         g, A, D = inputs[:3]
         if runtime.device.vendor_name == "ascend":
@@ -212,7 +243,9 @@ def main():
                 D=D,
                 contract=case,
                 path=path,
-                graph_replay_validated="cudagraph" in options.modes,
+                graph_replay_validated=any(
+                    mode in GRAPH_MODES for mode in options.modes
+                ),
                 selected_config=config.all_kwargs() if config is not None else None,
                 inputs=inputs,
             )
