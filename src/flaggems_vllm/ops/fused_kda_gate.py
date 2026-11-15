@@ -111,10 +111,10 @@ def _fused_kda_gate_tiled_kernel(
     LOWER_BOUND: tl.constexpr,
     HAS_BIAS: tl.constexpr,
     BT: tl.constexpr,
-    BD: tl.constexpr,
 ):
     # Share one head's exp(A) and bias across multiple tokens. Neighboring
     # programs visit neighboring heads before moving to the next token tile.
+    BD: tl.constexpr = triton.next_power_of_2(D)
     program = tl.program_id(0)
     head = program % H
     rows = (program // H).to(tl.int64) * BT + tl.arange(0, BT)
@@ -296,10 +296,9 @@ def fused_kda_gate(
                 g, A, g_bias, output, *constants, BT=bt, BH=bh, BD=bd, BLOCK=block
             )
         elif g.numel() >= 4 * 1024 * 1024:
-            bd = triton.next_power_of_2(head_k_dim)
             _fused_kda_gate_tiled_kernel[
                 lambda meta: (triton.cdiv(tokens, meta["BT"]) * heads,)
-            ](g, A, g_bias, output, *constants, BD=bd)
+            ](g, A, g_bias, output, *constants)
         else:
             _fused_kda_gate_kernel[
                 lambda meta: (triton.cdiv(g.numel(), meta["BLOCK"]),)
