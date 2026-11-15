@@ -23,6 +23,7 @@ from flaggems_vllm import runtime
 from flaggems_vllm.utils import libentry, libtuner, tl_extra_shim
 
 _IS_NVIDIA = runtime.device.vendor_name == "nvidia"
+_IS_HYGON = runtime.device.vendor_name == "hygon"
 _PREFER_INT32_INDEX = tl.constexpr(runtime.device.vendor_name in ("hygon", "mthreads"))
 
 if os.environ.get("FLA_USE_FAST_OPS", "0") == "1":
@@ -98,7 +99,7 @@ def _fused_kda_gate_kernel(
     key=["T", "H", "D", "HAS_BIAS", "SAFE_GATE"],
     warmup=5,
     rep=20,
-    use_cuda_graph=_IS_NVIDIA,
+    use_cuda_graph=_IS_NVIDIA or _IS_HYGON,
 )
 @triton.jit
 def _fused_kda_gate_tiled_kernel(
@@ -208,6 +209,13 @@ def _fused_kda_gate_ascend_kernel(
     tl.store(Y + offsets, result, mask)
 
 
+def _use_tiled_kernel(tokens, heads, head_k_dim, safe_gate):
+    # On BW1000, tiled transfers win earlier on the GLM-5.3-Flash safe gate.
+    return tokens * heads * head_k_dim >= 4 * 1024 * 1024 or (
+        _IS_HYGON and safe_gate and heads == 16 and head_k_dim == 128 and tokens >= 128
+    )
+
+
 def fused_kda_gate(
     g: torch.Tensor,
     A: torch.Tensor,
@@ -302,7 +310,7 @@ def fused_kda_gate(
             _fused_kda_gate_ascend_kernel[(grid,)](
                 g, A, g_bias, output, *constants, BT=bt, BH=bh, BD=bd, BLOCK=block
             )
-        elif g.numel() >= 4 * 1024 * 1024:
+        elif _use_tiled_kernel(tokens, heads, head_k_dim, safe_gate):
             _fused_kda_gate_tiled_kernel[
                 lambda meta: (triton.cdiv(tokens, meta["BT"]) * heads,)
             ](g, A, g_bias, output, *constants)

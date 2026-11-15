@@ -228,10 +228,16 @@ def main():
         if any(mode in GRAPH_MODES for mode in options.modes):
             check_graph(gate, make_inputs(case, runtime.device.name), device_fn)
         g, A, D = inputs[:3]
+        H = A.numel()
+        T = g.numel() // (H * D)
         if runtime.device.vendor_name == "ascend":
             path, config = "ascend", None
         else:
-            path = "tiled" if g.numel() >= 4 * 1024 * 1024 else "flat"
+            path = (
+                "tiled"
+                if module._use_tiled_kernel(T, H, D, case["safe_gate"])
+                else "flat"
+            )
             entry = (
                 module._fused_kda_gate_tiled_kernel
                 if path == "tiled"
@@ -240,8 +246,8 @@ def main():
             config = getattr(entry.fn, "best_config", None)
         prepared.append(
             dict(
-                T=g.numel() // (A.numel() * D),
-                H=A.numel(),
+                T=T,
+                H=H,
                 D=D,
                 contract=case,
                 path=path,
