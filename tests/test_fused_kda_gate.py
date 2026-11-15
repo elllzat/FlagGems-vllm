@@ -371,6 +371,17 @@ def test_ascend_vector_tile_prefill(dtype, shape):
     assert_output(g, A, D, bias, safe_gate=True)
 
 
+@pytest.mark.skipif(flaggems_vllm.vendor_name != "hygon", reason="HCU gate dispatch")
+@pytest.mark.parametrize("T", [127, 128])
+def test_hygon_gate_with_storage_offset(T):
+    H, D = 16, 128
+    device = flaggems_vllm.device
+    g = torch.randn(1 + T * H * D, device=device, dtype=torch.bfloat16)[1:]
+    A = torch.randn(H + 1, device=device)[1:]
+    bias = torch.randn(1 + H * D, device=device)[1:]
+    assert_output(g.view(T, H * D), A, D, bias, safe_gate=True)
+
+
 @pytest.mark.parametrize(
     "case",
     [
