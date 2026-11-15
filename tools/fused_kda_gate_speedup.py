@@ -36,6 +36,8 @@ import triton.language as tl
 
 from tools.fused_kda_gate_perf import (
     GRAPH_MODES,
+    MUSA_GRAPH_CALLS,
+    MUSA_GRAPH_REPLAYS,
     check_graph,
     check_output,
     make_inputs,
@@ -116,7 +118,10 @@ def main():
         mode=mode,
         rounds=options.rounds,
         rep_ms=options.rep if mode == "cudagraph" else None,
+        flagtree_aabs=os.environ.get("FLAGTREE_AABS"),
     )
+    if mode == "musagraph":
+        report.update(graph_calls=MUSA_GRAPH_CALLS, graph_replays=MUSA_GRAPH_REPLAYS)
 
     def save():
         options.output.parent.mkdir(parents=True, exist_ok=True)

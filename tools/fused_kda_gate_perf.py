@@ -33,6 +33,8 @@ import triton
 from tools.fused_kda_gate_portable_smoke import load_operator
 
 GRAPH_MODES = ("cudagraph", "musagraph")
+MUSA_GRAPH_CALLS = 256
+MUSA_GRAPH_REPLAYS = 10
 
 
 def make_inputs(case, device):
@@ -109,7 +111,7 @@ def measure(fn, mode, rep, warmup):
         # The FlagTree build on MUSA uses CUDA-specific APIs in its timer.
         # Batch launches in a native MUSA graph to amortize replay overhead.
         device_fn = torch.musa
-        calls = 256
+        calls = MUSA_GRAPH_CALLS
         fn()
         device_fn.synchronize()
         graph = device_fn.MUSAGraph()
@@ -118,7 +120,7 @@ def measure(fn, mode, rep, warmup):
                 fn()
         graph.replay()
         samples = []
-        for _ in range(10):
+        for _ in range(MUSA_GRAPH_REPLAYS):
             start = device_fn.Event(enable_timing=True)
             end = device_fn.Event(enable_timing=True)
             start.record()

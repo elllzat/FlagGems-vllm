@@ -23,6 +23,7 @@ from flaggems_vllm import runtime
 from flaggems_vllm.utils import libentry, libtuner, tl_extra_shim
 
 _IS_NVIDIA = runtime.device.vendor_name == "nvidia"
+_PREFER_INT32_INDEX = tl.constexpr(runtime.device.vendor_name in ("hygon", "mthreads"))
 
 if os.environ.get("FLA_USE_FAST_OPS", "0") == "1":
     log = getattr(tl_extra_shim, "fast_logf", tl.log)
@@ -67,7 +68,10 @@ def _fused_kda_gate_kernel(
     HAS_BIAS: tl.constexpr,
     BLOCK: tl.constexpr,
 ):
-    offsets = tl.program_id(0).to(tl.int64) * BLOCK + tl.arange(0, BLOCK)
+    program = tl.program_id(0)
+    if not _PREFER_INT32_INDEX or T * H * D >= 2**31:
+        program = program.to(tl.int64)
+    offsets = program * BLOCK + tl.arange(0, BLOCK)
     mask = offsets < T * H * D
     columns = offsets % (H * D)
     heads = columns // D
@@ -117,7 +121,10 @@ def _fused_kda_gate_tiled_kernel(
     BD: tl.constexpr = triton.next_power_of_2(D)
     program = tl.program_id(0)
     head = program % H
-    rows = (program // H).to(tl.int64) * BT + tl.arange(0, BT)
+    row_tile = program // H
+    if not _PREFER_INT32_INDEX or T * H * D >= 2**31:
+        row_tile = row_tile.to(tl.int64)
+    rows = row_tile * BT + tl.arange(0, BT)
     cols = tl.arange(0, BD)
     offsets = rows[:, None] * (H * D) + head * D + cols[None, :]
     mask = (rows[:, None] < T) & (cols[None, :] < D)
