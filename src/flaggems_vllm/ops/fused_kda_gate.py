@@ -25,8 +25,6 @@ from flaggems_vllm.utils import libentry, libtuner, tl_extra_shim
 _IS_NVIDIA = runtime.device.vendor_name == "nvidia"
 _IS_HYGON = runtime.device.vendor_name == "hygon"
 _PREFER_INT32_INDEX = tl.constexpr(runtime.device.vendor_name in ("hygon", "mthreads"))
-# HCU pointer specialization queries the storage size for each launch.
-_UNSPECIALIZED_POINTERS = ["G", "A", "BIAS", "Y"] if _IS_HYGON else []
 
 if os.environ.get("FLA_USE_FAST_OPS", "0") == "1":
     log = getattr(tl_extra_shim, "fast_logf", tl.log)
@@ -55,7 +53,7 @@ def _prune_flat_configs(configs, named_args, **kwargs):
     use_cuda_graph=_IS_NVIDIA,
     prune_configs_by={"early_config_prune": _prune_flat_configs},
 )
-@triton.jit(do_not_specialize=_UNSPECIALIZED_POINTERS)
+@triton.jit
 def _fused_kda_gate_kernel(
     G,
     A,
@@ -103,7 +101,7 @@ def _fused_kda_gate_kernel(
     rep=20,
     use_cuda_graph=_IS_NVIDIA or _IS_HYGON,
 )
-@triton.jit(do_not_specialize=_UNSPECIALIZED_POINTERS)
+@triton.jit
 def _fused_kda_gate_tiled_kernel(
     G,
     A,
