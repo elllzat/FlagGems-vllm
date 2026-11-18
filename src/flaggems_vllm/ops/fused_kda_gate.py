@@ -162,7 +162,10 @@ def _fused_kda_gate_ascend_softplus_kernel(
 ):
     # A complete token row is contiguous. Keep only BT rows live in the 910B
     # vector buffer, then reuse their parameters across successive row tiles.
-    first = tl.program_id(0).to(tl.int64) * (BT * STEPS)
+    program = tl.program_id(0)
+    if T * H * D >= 2**31:
+        program = program.to(tl.int64)
+    first = program * (BT * STEPS)
     cols = tl.arange(0, H * D)
     if HAS_BIAS:
         bias = tl.load(BIAS + cols).to(tl.float32)
