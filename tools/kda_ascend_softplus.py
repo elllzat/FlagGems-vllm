@@ -37,7 +37,7 @@ from triton.backends.ascend.testing import do_bench_npu
 from tools.fused_kda_gate_perf import check_output, load_operator, make_inputs
 
 BASELINE_REV = "a1df499e0762621c2b9561e2ee66c498a70d0328"
-BASELINE_AST = "5b5b639f79e05a3b6cad379b6166d3413d7d35b7fc60b138d5ff4e701ce1c7eb"
+BASELINE_AST = "390b4212e9dd4c36470ac6225d474565bbd2c8350fbf64de8f4e726bcb213b08"
 ROOT = Path(__file__).resolve().parents[1]
 
 
