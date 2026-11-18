@@ -140,6 +140,62 @@ def candidate(inputs, output, bt, bh, block_ptr, multibuffer=True):
     return output
 
 
+@triton.jit
+def loop_kernel(
+    G,
+    A,
+    BIAS,
+    Y,
+    T: tl.constexpr,
+    H: tl.constexpr,
+    D: tl.constexpr,
+    BT: tl.constexpr,
+    BH: tl.constexpr,
+    LOOPS: tl.constexpr,
+    BLOCK_PTR: tl.constexpr,
+):
+    pid = tl.program_id(0)
+    head = (pid % (H // BH)) * BH
+    first = (pid // (H // BH)) * (BT * LOOPS)
+    cols = tl.arange(0, BH * D)
+    bias = tl.load(BIAS + head * D + cols).to(tl.float32)
+    scales = tl.exp(tl.load(A + head + tl.arange(0, BH)).to(tl.float32))
+    scales = tl.reshape(tl.broadcast_to(scales[:, None], (BH, D)), (BH * D,))
+    for step in range(LOOPS):
+        token = first + step * BT
+        if BLOCK_PTR:
+            gp = tl.make_block_ptr(
+                G + head * D, (T, BH * D), (H * D, 1), (token, 0), (BT, BH * D), (1, 0)
+            )
+            yp = tl.make_block_ptr(
+                Y + head * D, (T, BH * D), (H * D, 1), (token, 0), (BT, BH * D), (1, 0)
+            )
+            value = tl.load(gp, boundary_check=(0, 1)).to(tl.float32)
+        else:
+            rows = token + tl.arange(0, BT)
+            offsets = rows[:, None] * (H * D) + head * D + cols[None, :]
+            mask = rows[:, None] < T
+            value = tl.load(G + offsets, mask, other=0).to(tl.float32)
+        value += bias[None, :]
+        result = -scales[None, :] * tl.where(
+            value > 20.0, value, tl.log(1.0 + tl.exp(value))
+        )
+        if BLOCK_PTR:
+            tl.store(yp, result, boundary_check=(0, 1))
+        else:
+            tl.store(Y + offsets, result, mask)
+
+
+def loop_candidate(inputs, output, bt, bh, loops, pointer):
+    g, a, d, bias = inputs[:4]
+    h = a.numel()
+    t = g.numel() // (h * d)
+    loop_kernel[(triton.cdiv(t, bt * loops) * (h // bh),)](
+        g, a, bias, output, t, h, d, bt, bh, loops, pointer, multibuffer=False
+    )
+    return output
+
+
 def write_report(options, report):
     options.output.parent.mkdir(parents=True, exist_ok=True)
     options.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
@@ -148,7 +204,9 @@ def write_report(options, report):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=("compare", "sweep"), default="compare")
-    parser.add_argument("--sweep-kind", choices=("layout", "storage"), default="layout")
+    parser.add_argument(
+        "--sweep-kind", choices=("layout", "storage", "loops"), default="layout"
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--rounds", type=int, default=5)
     parser.add_argument("--warmup", type=int, default=5)
@@ -264,6 +322,29 @@ def main():
                         continue
                     row["timings"][label] = []
                     jobs.append((row, label, call))
+            if options.sweep_kind == "loops":
+                # The loop reuses parameters while keeping a bounded 8K live tile.
+                for bh, bt in [(4, 16), (16, 4)]:
+                    for loops in (1, 2, 4, 8):
+                        for pointer in (False, True):
+                            label = f"loop BH={bh},BT={bt},steps={loops},ptr={pointer}"
+                            buffer = torch.empty_like(out)
+                            call = functools.partial(
+                                loop_candidate, inputs, buffer, bt, bh, loops, pointer
+                            )
+                            try:
+                                check_output(call(), inputs)
+                                torch.testing.assert_close(
+                                    buffer, base_result, rtol=1e-4, atol=1e-4
+                                )
+                            except Exception as error:
+                                row["errors"][label] = repr(error)[:1000]
+                                print(
+                                    f"KDA_PROGRESS T={t} rejected {label}", flush=True
+                                )
+                                continue
+                            row["timings"][label] = []
+                            jobs.append((row, label, call))
             print(
                 f"KDA_PROGRESS T={t} validated {len(row['timings'])} variants",
                 flush=True,
