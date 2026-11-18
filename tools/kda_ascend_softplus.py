@@ -17,6 +17,7 @@ import argparse
 import ast
 import functools
 import hashlib
+import importlib
 import json
 import linecache
 import math
@@ -201,9 +202,49 @@ def write_report(options, report):
     options.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
 
+def validate_isolated(options, runtime, gate):
+    """Run the real operator tests when an unrelated TLE import blocks the package."""
+    import pytest
+
+    package = sys.modules["flaggems_vllm"]
+    package.device = runtime.device.name
+    package.vendor_name = runtime.device.vendor_name
+    package.runtime = runtime
+    package.fused_kda_gate = gate
+    package.ops = sys.modules["flaggems_vllm.ops"]
+    package.ops.fused_kda_gate = gate
+    package.testing = importlib.import_module("flaggems_vllm.testing")
+    # Public-export checks need an ordinary package import and are excluded here.
+    code = pytest.main(
+        [
+            "-q",
+            "tests/test_fused_kda_gate.py",
+            "--ref",
+            "cpu",
+            "-x",
+            "-k",
+            "not public_export_and_signature and not captured_model_shapes",
+            "--junitxml",
+            str(options.output.with_suffix(".xml")),
+        ]
+    )
+    write_report(
+        options,
+        {
+            "status": "passed" if code == 0 else "failed",
+            "pytest_exitcode": int(code),
+            "isolated_operator_import": True,
+            "public_package_import_verified": False,
+        },
+    )
+    return int(code)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("compare", "sweep"), default="compare")
+    parser.add_argument(
+        "--mode", choices=("compare", "sweep", "validate"), default="compare"
+    )
     parser.add_argument(
         "--sweep-kind", choices=("layout", "storage", "loops"), default="layout"
     )
@@ -218,6 +259,9 @@ def main():
     assert runtime.device.vendor_name == "ascend"
     assert Path("/.dockerenv").exists(), "run inside the test container"
     torch.npu.set_device(0)
+    if options.mode == "validate":
+        options.output.parent.mkdir(parents=True, exist_ok=True)
+        raise SystemExit(validate_isolated(options, runtime, gems))
     contracts_bytes = (
         ROOT / "benchmark/fused_kda_gate_captured_contracts.json"
     ).read_bytes()

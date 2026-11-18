@@ -371,6 +371,38 @@ def test_ascend_vector_tile_prefill(dtype, shape):
     assert_output(g, A, D, bias, safe_gate=True)
 
 
+@pytest.mark.skipif(
+    flaggems_vllm.vendor_name != "ascend", reason="Ascend softplus tiles"
+)
+@pytest.mark.parametrize("dtype", DTYPES)
+@pytest.mark.parametrize(
+    "shape",
+    [(128, 16, 128), (129, 16, 128), (1025, 16, 128), (2048, 16, 128), (257, 12, 80)],
+)
+@pytest.mark.parametrize("has_bias", [False, True])
+@pytest.mark.parametrize("beta,threshold", [(0.5, 5.0), (2.0, 10.0)])
+def test_ascend_softplus_tiles(dtype, shape, has_bias, beta, threshold):
+    T, H, D = shape
+    g = torch.randn(1, T, H * D, device=flaggems_vllm.device, dtype=dtype)
+    A = torch.randn(1, 1, H, 1, device=g.device) * 0.5
+    bias = torch.randn(H * D, device=g.device) * 0.1 if has_bias else None
+    assert_output(g, A, D, bias, beta=beta, threshold=threshold, safe_gate=False)
+
+
+@pytest.mark.skipif(
+    flaggems_vllm.vendor_name != "ascend", reason="Ascend offset transfers"
+)
+@pytest.mark.parametrize("dtype", DTYPES)
+@pytest.mark.parametrize("safe_gate", [False, True])
+def test_ascend_model_storage_offset(dtype, safe_gate):
+    T, H, D = 129, 16, 128
+    device = flaggems_vllm.device
+    g = torch.randn(1 + T * H * D, device=device, dtype=dtype)[1:].view(1, T, H * D)
+    A = torch.randn(H + 1, device=device)[1:]
+    bias = torch.randn(H * D + 1, device=device)[1:]
+    assert_output(g, A, D, bias, safe_gate=safe_gate)
+
+
 @pytest.mark.skipif(flaggems_vllm.vendor_name != "hygon", reason="HCU gate dispatch")
 @pytest.mark.parametrize("T", [127, 128])
 def test_hygon_gate_with_storage_offset(T):
@@ -426,7 +458,7 @@ def test_invalid_input(case):
 
 def test_public_export_and_signature():
     assert flaggems_vllm.ops.fused_kda_gate is gems_fused_kda_gate
-    assert ("fused_kda_gate", gems_fused_kda_gate) in flaggems_vllm._FULL_CONFIG
+    assert "fused_kda_gate" in flaggems_vllm.ops.__all__
     assert inspect.signature(gems_fused_kda_gate) == inspect.signature(
         ref_fused_kda_gate
     )

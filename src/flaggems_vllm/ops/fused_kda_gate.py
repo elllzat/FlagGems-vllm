@@ -146,6 +146,45 @@ def _fused_kda_gate_tiled_kernel(
 
 
 @triton.jit
+def _fused_kda_gate_ascend_softplus_kernel(
+    G,
+    A,
+    BIAS,
+    Y,
+    T: tl.constexpr,
+    H: tl.constexpr,
+    D: tl.constexpr,
+    BETA: tl.constexpr,
+    THRESHOLD: tl.constexpr,
+    HAS_BIAS: tl.constexpr,
+    BT: tl.constexpr,
+    STEPS: tl.constexpr,
+):
+    # A complete token row is contiguous. Keep only BT rows live in the 910B
+    # vector buffer, then reuse their parameters across successive row tiles.
+    first = tl.program_id(0).to(tl.int64) * (BT * STEPS)
+    cols = tl.arange(0, H * D)
+    if HAS_BIAS:
+        bias = tl.load(BIAS + cols).to(tl.float32)
+    scales = -tl.exp(tl.load(A + tl.arange(0, H)).to(tl.float32))
+    scales = tl.reshape(tl.broadcast_to(scales[:, None], (H, D)), (H * D,))
+    for step in range(STEPS):
+        rows = first + step * BT + tl.arange(0, BT)
+        offsets = rows[:, None] * (H * D) + cols[None, :]
+        mask = rows[:, None] < T
+        value = tl.load(G + offsets, mask, other=0).to(tl.float32)
+        if HAS_BIAS:
+            value += bias[None, :]
+        scaled = value * BETA
+        softplus = tl.where(
+            scaled > THRESHOLD,
+            value,
+            (1.0 / BETA) * tl.log(1.0 + tl.exp(scaled)),
+        )
+        tl.store(Y + offsets, scales[None, :] * softplus, mask)
+
+
+@triton.jit
 def _fused_kda_gate_ascend_kernel(
     G,
     A,
@@ -286,6 +325,28 @@ def fused_kda_gate(
     )
     with runtime.torch_device_fn.device(g.device):
         if runtime.device.vendor_name == "ascend":
+            if not safe_gate and heads == 16 and head_k_dim == 128 and tokens >= 128:
+                # 4 * 16 * 128 = 8192 live elements fit the softplus vector
+                # working set. A 16K live tile overflows the 910B's 192 KiB UB.
+                steps = 2 if tokens < 512 else 8
+                _fused_kda_gate_ascend_softplus_kernel[
+                    (triton.cdiv(tokens, 4 * steps),)
+                ](
+                    g,
+                    A,
+                    g_bias,
+                    output,
+                    tokens,
+                    heads,
+                    head_k_dim,
+                    beta,
+                    threshold,
+                    g_bias is not None,
+                    BT=4,
+                    STEPS=steps,
+                    multibuffer=False,
+                )
+                return output
             # Head boundaries must align to a 32-byte block for FP16/BF16
             # transfers. Pad the vector width, but keep the original row stride.
             aligned_head = head_k_dim <= 256 and head_k_dim % 16 == 0
