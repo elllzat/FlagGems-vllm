@@ -417,7 +417,7 @@ def main():
             row["speedup"] = statistics.median(ratios)
             best = min(row["median_us"], key=row["median_us"].get)
             print(
-                f"KDA_PROGRESS round={repeat+1} T={row['T']} best={best} "
+                f"KDA_PROGRESS round={repeat + 1} T={row['T']} best={best} "
                 f"us={row['median_us'][best]:.3f} speedup={row['speedup']:.3f}",
                 flush=True,
             )
