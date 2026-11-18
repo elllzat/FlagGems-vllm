@@ -130,12 +130,12 @@ def candidate_kernel(
         tl.store(Y + offsets, result, mask)
 
 
-def candidate(inputs, output, bt, bh, block_ptr):
+def candidate(inputs, output, bt, bh, block_ptr, multibuffer=True):
     g, a, d, bias = inputs[:4]
     h = a.numel()
     t = g.numel() // (h * d)
     candidate_kernel[(triton.cdiv(t, bt) * (h // bh),)](
-        g, a, bias, output, t, h, d, bt, bh, block_ptr
+        g, a, bias, output, t, h, d, bt, bh, block_ptr, multibuffer=multibuffer
     )
     return output
 
@@ -148,6 +148,7 @@ def write_report(options, report):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=("compare", "sweep"), default="compare")
+    parser.add_argument("--sweep-kind", choices=("layout", "storage"), default="layout")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--rounds", type=int, default=5)
     parser.add_argument("--warmup", type=int, default=5)
@@ -229,14 +230,25 @@ def main():
                 (8, 16),
                 (16, 8),
             ]
+            buffers = (True,)
+            if options.sweep_kind == "storage":
+                matrix = [(1, 128), (4, 32), (8, 16), (16, 4), (16, 8)]
+                buffers = (True, False)
             for bh, bt in matrix:
                 if bt > triton.next_power_of_2(t):
                     continue
-                for block_ptr in (False, True):
-                    label = f"BH={bh},BT={bt},block_ptr={block_ptr}"
+                variants = [
+                    (pointer, buffering)
+                    for pointer in (False, True)
+                    for buffering in buffers
+                ]
+                for block_ptr, buffering in variants:
+                    label = (
+                        f"BH={bh},BT={bt},block_ptr={block_ptr},multibuffer={buffering}"
+                    )
                     buffer = torch.empty_like(out)
                     call = functools.partial(
-                        candidate, inputs, buffer, bt, bh, block_ptr
+                        candidate, inputs, buffer, bt, bh, block_ptr, buffering
                     )
                     try:
                         check_output(call(), inputs)
