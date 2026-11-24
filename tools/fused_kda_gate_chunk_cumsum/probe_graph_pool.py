@@ -84,6 +84,7 @@ def main():
     names = {"runtime_e360a24e5ecf", "runtime_df2b19d422cc", "runtime_c1ba024b2419"}
     report = {
         "scope": "Pool diagnostic only; frozen baseline and original six configs",
+        "capture_output_lifetime": "legacy retain previous output",
         "baseline_sha256": hashlib.sha256(
             Path(__file__).with_name("upstream.py").read_bytes()
         ).hexdigest(),

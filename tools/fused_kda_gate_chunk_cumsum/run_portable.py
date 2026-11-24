@@ -87,7 +87,7 @@ def recorded_launch(call, entry):
     return output, config
 
 
-def capture(call, api, repeats):
+def capture(call, api, repeats, retain_previous=False):
     graph_type = next(
         getattr(api, name)
         for name in ("CUDAGraph", "MUSAGraph", "PPUGraph", "Graph")
@@ -101,7 +101,16 @@ def capture(call, api, repeats):
     graph = graph_type()
     with api.stream(stream):
         graph.capture_begin()
-        for _ in range(repeats):
+        if retain_previous:
+            # Historical diagnostic mode: assignment keeps one previous output
+            # alive while the next call allocates, usually alternating buffers.
+            for _ in range(repeats):
+                output = call()
+        else:
+            # Match triton.testing.do_bench_cudagraph: discard each return.
+            # Keep only the final result so replay correctness can be checked.
+            for _ in range(repeats - 1):
+                call()
             output = call()
         graph.capture_end()
     stream.synchronize()
@@ -131,10 +140,15 @@ def main():
     parser.add_argument("--rounds", type=int, default=5)
     parser.add_argument("--repeats", type=int, default=256)
     parser.add_argument(
+        "--legacy-retain-output", action="store_true", help="Historical diagnostic only"
+    )
+    parser.add_argument(
         "--candidate-bd-list", help="Explicit candidate-only tuning trial"
     )
     parser.add_argument("--output", type=Path, required=True)
     options = parser.parse_args()
+    if options.rounds < 1 or options.repeats < 1:
+        parser.error("rounds and repeats must be positive")
     library, candidate = load_operator(options.isolated)
     candidate_module = importlib.import_module(
         "flaggems_vllm.ops.fused_kda_gate_chunk_cumsum"
@@ -201,6 +215,11 @@ def main():
         "graph_repetitions": options.repeats,
         "samples_per_latency": 7,
         "graph_warmup_replays": 3,
+        "capture_output_lifetime": (
+            "legacy retain previous output"
+            if options.legacy_retain_output
+            else "discard intermediates, validate final output (standard Triton lifetime)"
+        ),
         "baseline": "frozen GLM5Next Triton source, fresh original tuner per case",
         "source_sha256": dataset["cases"][0]["captured_contract"]["source_sha256"],
         "shape_values": "captured model dimensions, synthetic tensor values",
@@ -265,10 +284,13 @@ def main():
         if not options.validate_only:
             graphs = {}
             for name, call in calls.items():
-                graph, output = capture(call, api, options.repeats)
+                graph, output = capture(
+                    call, api, options.repeats, options.legacy_retain_output
+                )
                 graph.replay()
                 api.synchronize()
                 assert_close(output, expected)
+                del output
                 graphs[name] = graph
             for round_id in range(options.rounds):
                 order = (
