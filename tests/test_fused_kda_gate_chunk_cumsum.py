@@ -130,6 +130,19 @@ def test_upstream_nonfinite_and_signed_zero(value, safe):
     assert_close(port(*args, **kwargs), upstream(*args, **kwargs))
 
 
+@pytest.mark.parametrize("parameter", ["A_log", "g_bias"])
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+@pytest.mark.parametrize("safe", [False, True])
+def test_nonfinite_parameters_and_padded_rows(parameter, value, safe):
+    # A nonfinite padded gate can contaminate visible rows in the original dot.
+    args, kwargs = make_inputs(CORRECTNESS_CASES[3], dtype=torch.float32, safe=safe)
+    args[0].fill_(0.1)
+    kwargs["g_bias"].zero_()
+    tensor = args[1] if parameter == "A_log" else kwargs["g_bias"]
+    tensor.view(-1)[0] = value
+    assert_close(port(*args, **kwargs), upstream(*args, **kwargs))
+
+
 @pytest.mark.parametrize("shape", [(0, 65, 4, 128), (1, 0, 4, 128)])
 def test_empty(shape):
     g = torch.empty(shape, device=flaggems_vllm.device, dtype=torch.bfloat16)
