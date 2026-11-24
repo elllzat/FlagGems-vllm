@@ -66,8 +66,10 @@ def make_inputs(
     # Test values are synthesized on CPU, then shared by both implementations.
     # Do not require a vendor-specific random-number generator.
     generator = torch.Generator(device="cpu").manual_seed(20261027)
-    g = torch.randn((case.B, case.T, case.H, case.D), generator=generator).to(
-        device=device, dtype=dtype
+    g = (
+        torch.randn((case.B, case.T, case.H, case.D), generator=generator)
+        .to(device=device, dtype=dtype)
+        .contiguous()
     )
     a = (torch.randn(case.H, generator=generator) * 0.3 - 1).to(device)
     a = a.view(1, 1, case.H, 1)

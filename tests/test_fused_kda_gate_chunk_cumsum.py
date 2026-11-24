@@ -151,7 +151,8 @@ def test_unsupported(kind):
     if kind == "raw":
         args = (args[0].to(torch.int32), args[1])
     elif kind == "A_log":
-        args = (args[0], args[1].to(torch.float64))
+        # Allocation needs no unsupported FP64 conversion kernel on the vendor.
+        args = (args[0], torch.empty_like(args[1], dtype=torch.float64))
     elif kind == "g_bias":
         kwargs["g_bias"] = kwargs["g_bias"].to(torch.int32)
     elif kind == "output":
