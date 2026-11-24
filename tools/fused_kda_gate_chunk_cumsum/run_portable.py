@@ -127,7 +127,11 @@ def main():
                 config = copy.deepcopy(original)
                 config.kwargs["BD"] = bd
                 configs[(bd, config.num_warps, config.num_stages)] = config
-        candidate_tuner.configs = list(configs.values())
+        # LibTuner's persistent cache identity includes the candidate list.
+        # Updating only .configs would silently reuse the old six-config winner.
+        candidate_tuner._set_configs_and_strategy(
+            list(configs.values()), candidate_tuner.strategy
+        )
     if options.functional:
         import pytest
 
