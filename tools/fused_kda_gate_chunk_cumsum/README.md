@@ -88,6 +88,7 @@ Run all commands in the user's own vendor container after a Git pull:
 ```bash
 PYTHONPATH=src:tools:${PYTHONPATH:-} python -m pytest -q tests/test_fused_kda_gate_chunk_cumsum.py --quick
 PYTHONPATH=src:tools:${PYTHONPATH:-} python tools/fused_kda_gate_chunk_cumsum/run_portable.py --output /workspace/chunk-cumsum-results/performance.json
+PYTHONPATH=src:tools:${PYTHONPATH:-} python -m pytest -q benchmark/test_fused_kda_gate_chunk_cumsum.py -k True --mode cudagraph --level core --iter 1 --warmup 1
 ```
 
 The runner checks candidate and reference against independent Torch math before
@@ -102,12 +103,50 @@ samples per latency. Earlier 64-call trials are retained separately. Candidate
 configuration reporting records the actual LibEntry launch, including cache
 hits; reading the tuner's last best_config alone can describe a previous case.
 Acceptance follows workflow.md (no key shape below 0.9x); the handoff's 1.1x
-optimization goal is reported separately. No measured result is asserted here.
+optimization goal is reported separately in the results below.
 
 `--isolated` is an explicit diagnostic option for unrelated whole-package import
 failures. It loads the actual runtime/utilities/operator from the same checkout,
 marks public-package integration unverified and deselects its integration test.
 It must not be reported as a full public-package pass.
+
+## Results, 2026-11-24
+
+The final five-round, 256-call Graph reports are preserved in
+[`validation/graph_2026-11-24.json`](validation/graph_2026-11-24.json), including
+every case, round, actual launch configuration, revision and source hashes.
+All four reports measure the same production source SHA256
+`4a7c0d94b50c441d96ab69dd20e6538add5e52d38aab1c6ee751bb72ec29ddd0`.
+The designated baseline is the frozen vLLM Triton source compiled on each
+backend; these numbers do not compare against a separate vendor-native kernel.
+
+| Platform | Geometric mean | Minimum | Cases >= 1.1x | Functional validation |
+| --- | ---: | ---: | ---: | --- |
+| NVIDIA H800 | 1.436x | 1.133x | 38/38 | 209 passed |
+| HCU BW1000 | 1.084x | 0.999x | 16/38 | 209 passed |
+| MetaX C550 | 1.106x | 0.962x | 17/38 | 197 passed, 12 baseline resource xfails |
+| PPU (isolated operator) | 1.613x | 1.305x | 38/38 | 208 passed, public integration deselected; final quick 120 passed |
+
+All 38 actual cases on each measured backend meet the workflow's 0.9x minimum.
+HCU has not reached the handoff's 1.1x geometric-mean aspiration. PPU numbers
+retain the isolated-operator qualification described below. Functional runs
+cover both gate modes, multiple float/output/index types, packed/dense inputs,
+tails, empty inputs, unsupported metadata and nonfinite g/A/bias. The C550
+chunk128 xfails concern the unchanged reference after our output matches
+independent Torch math; they do not exclude any actual case.
+
+An initial C550 64-call trial reported 0.856x for T=256 with one sequence.
+Fixed-configuration checks put both kernels around 14 us; the final uniform
+256-call five-round run records 1.208x for that case. This was not reproduced
+as a stable algorithm regression. The specific hardware cause remains
+unconfirmed; the earlier result is not treated as disproven or silently omitted.
+Do not use the expanded-BD trials or the earlier stale configuration fields as
+the final result. Final performance revisions are recorded in the JSON;
+subsequent documentation/benchmark-input fixes do not change production code.
+The standard repository benchmark also passed its safe-gate integration smoke
+on H800 (one parametrized test covering all 38 contracts). Its short framework
+timing is a separate integration check; the table above uses only the recorded
+five-round paired runner, not a mixture of benchmark methods.
 
 ## Container environment notes
 
