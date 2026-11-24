@@ -46,6 +46,11 @@ _MIN_SCAN_WARPS = min(
 log = libdevice.fast_logf if os.environ.get("FLA_USE_FAST_OPS", "0") == "1" else tl.log
 
 _WAVE64_SCHEDULE = tl.constexpr(runtime.device.vendor_name in ("hygon", "metax"))
+_SCAN_CONFIG = (
+    "fused_kda_gate_chunk_cumsum_scan"
+    if runtime.device.vendor_name == "hygon"
+    else "fused_kda_gate_chunk_cumsum"
+)
 
 
 @triton.jit
@@ -78,7 +83,7 @@ def _program_coordinates(
     }
 )
 @libtuner(
-    configs=runtime.get_tuned_config("fused_kda_gate_chunk_cumsum"),
+    configs=runtime.get_tuned_config(_SCAN_CONFIG),
     key=[
         "H",
         "D",
@@ -313,7 +318,9 @@ def _kda_gate_cumsum_dot_kernel(
 
 
 _wave64_scan_kernel = None
-if gluon is not None and runtime.device.vendor_name in ("hygon", "metax"):
+# HCU's installed FlagTree exposes Gluon but cannot infer even a blocked
+# tensor layout (HCUMFMALayout is missing). Keep its standard Triton path.
+if gluon is not None and runtime.device.vendor_name == "metax":
 
     @gluon.jit
     def _wave64_sum(a, b):
