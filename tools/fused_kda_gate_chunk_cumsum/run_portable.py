@@ -113,9 +113,10 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     options = parser.parse_args()
     library, candidate = load_operator(options.isolated)
-    candidate_kernel = importlib.import_module(
+    candidate_module = importlib.import_module(
         "flaggems_vllm.ops.fused_kda_gate_chunk_cumsum"
-    ).kda_gate_cumsum_fwd_kernel
+    )
+    candidate_kernel = candidate_module.kda_gate_cumsum_fwd_kernel
     candidate_tuner = tuner_of(candidate_kernel)
     if options.candidate_bd_list:
         bds = [int(x) for x in options.candidate_bd_list.split(",")]
@@ -206,8 +207,21 @@ def main():
         for call in calls.values():
             assert_close(call(), expected)
         row = {"case": spec["case"], "correctness": "passed", "rounds": []}
+        automatic = (
+            kwargs.get("cu_seqlens") is not None and kwargs.get("chunk_indices") is None
+        )
+        batches = len(kwargs["cu_seqlens"]) - 1 if automatic else values["B"]
+        chunks = (
+            len(kwargs["chunk_indices"])
+            if kwargs.get("chunk_indices") is not None
+            else (values["T"] + values["chunk"] - 1) // values["chunk"]
+        )
+        active_kernel = candidate_module._select_kernel(
+            args[0].device, values["H"], chunks, batches, values["chunk"], automatic
+        )
+        row["algorithm"] = "scan" if active_kernel is candidate_kernel else "dot"
         row["baseline_config"] = tuner_of(upstream_kernel).best_config.all_kwargs()
-        row["gems_config"] = candidate_tuner.best_config.all_kwargs()
+        row["gems_config"] = tuner_of(active_kernel).best_config.all_kwargs()
         if not options.validate_only:
             graphs = {}
             for name, call in calls.items():

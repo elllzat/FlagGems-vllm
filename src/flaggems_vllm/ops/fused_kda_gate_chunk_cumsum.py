@@ -10,7 +10,8 @@ The upstream file credits flash-linear-attention (MIT), Copyright (c)
 2023-2025, Songlin Yang, Yu Zhang.
 
 The original gate formulas and post-sum RCP_LN2 scaling are retained. The
-handoff's FP32 inclusive scan replaces the triangular matrix multiplication.
+handoff's FP32 inclusive scan replaces triangular matrix multiplication for
+large launches. HCU/MACA retain a matrix-prefix path for short launches.
 Nonfinite values retain the upstream zero-times-NaN/Inf propagation. Changes:
 repository tuner/device integration,
 explicit metadata validation, empty handling, and a correctness-first device
@@ -32,6 +33,10 @@ from flaggems_vllm.utils import libentry, libtuner
 
 RCP_LN2 = 1.4426950216
 _FLOAT_DTYPES = (torch.float16, torch.bfloat16, torch.float32)
+_MIN_SCAN_WARPS = min(
+    config.num_warps
+    for config in runtime.get_tuned_config("fused_kda_gate_chunk_cumsum")
+)
 log = libdevice.fast_logf if os.environ.get("FLA_USE_FAST_OPS", "0") == "1" else tl.log
 
 
@@ -144,6 +149,136 @@ def kda_gate_cumsum_fwd_kernel(
     b_y = tl.where(o_c[:, None] < last_nonfinite[None, :], float("nan"), b_y)
     b_y = tl.where(b_y == 0.0, 0.0, b_y) * cumsum_scale
     tl.store(p_y, b_y.to(p_y.dtype.element_ty), mask=m_g)
+
+
+@libentry()
+@triton.heuristics(
+    {
+        "HAS_BIAS": lambda args: args["g_bias"] is not None,
+        "IS_VARLEN": lambda args: args["cu_seqlens"] is not None,
+    }
+)
+@libtuner(
+    configs=runtime.get_tuned_config("fused_kda_gate_chunk_cumsum"),
+    key=[
+        "H",
+        "D",
+        "BT",
+        "IS_VARLEN",
+        "AUTO_INDICES",
+        "HAS_BIAS",
+        "SAFE_GATE",
+        "TUNE_T",
+        "TUNE_NT",
+        "TUNE_B",
+        "TUNE_N",
+    ],
+    use_cuda_graph=True,
+)
+@triton.jit(do_not_specialize=["T"])
+def _kda_gate_cumsum_dot_kernel(
+    g,
+    A,
+    y,
+    g_bias,
+    cu_seqlens,
+    chunk_indices,
+    cumsum_scale,
+    beta,
+    threshold,
+    SAFE_GATE: tl.constexpr,
+    LOWER_BOUND: tl.constexpr,
+    T,
+    H: tl.constexpr,
+    D: tl.constexpr,
+    BT: tl.constexpr,
+    BD: tl.constexpr,
+    HAS_BIAS: tl.constexpr,
+    IS_VARLEN: tl.constexpr,
+    AUTO_INDICES: tl.constexpr,
+    TUNE_T: tl.constexpr,
+    TUNE_NT: tl.constexpr,
+    TUNE_B: tl.constexpr,
+    TUNE_N: tl.constexpr,
+):
+    i_d, i_t, i_bh = tl.program_id(0), tl.program_id(1).to(tl.int64), tl.program_id(2)
+    i_b, i_h = i_bh // H, i_bh % H
+    if IS_VARLEN:
+        if AUTO_INDICES:
+            # Rectangular sequence/chunk grid: no host tensor reads or index
+            # construction. Empty/short sequences simply skip excess programs.
+            i_n = i_b
+        else:
+            i_n, i_t = (
+                tl.load(chunk_indices + i_t * 2).to(tl.int32),
+                tl.load(chunk_indices + i_t * 2 + 1).to(tl.int64),
+            )
+        bos, eos = (
+            tl.load(cu_seqlens + i_n).to(tl.int32),
+            tl.load(cu_seqlens + i_n + 1).to(tl.int32),
+        )
+        T = eos - bos
+        if AUTO_INDICES:
+            if i_t * BT >= T:
+                return
+    else:
+        bos = i_b * T
+
+    o_t = i_t * BT + tl.arange(0, BT)
+    o_d = i_d * BD + tl.arange(0, BD)
+    m_t = o_t < T
+    m_g = m_t[:, None] & (o_d[None, :] < D)
+    p_g = g + (bos * H + i_h) * D + o_t[:, None] * (H * D) + o_d[None, :]
+    p_y = y + (bos * H + i_h) * D + o_t[:, None] * (H * D) + o_d[None, :]
+
+    b_g = tl.load(p_g, mask=m_g, other=0.0).to(tl.float32)
+    if HAS_BIAS:
+        b_bias = tl.load(g_bias + i_h * D + o_d, mask=o_d < D, other=0.0).to(tl.float32)
+        b_g = b_g + b_bias[None, :]
+
+    b_a = tl.load(A + i_h).to(tl.float32)
+    b_a = tl.exp(b_a) if SAFE_GATE else -tl.exp(b_a)
+    if SAFE_GATE:
+        b_gate = LOWER_BOUND / (1.0 + tl.exp(-(b_a * b_g)))
+    else:
+        b_g_scaled = b_g * beta
+        b_softplus = tl.where(
+            b_g_scaled > threshold,
+            b_g,
+            (1.0 / beta) * log(1.0 + tl.exp(b_g_scaled)),
+        )
+        b_gate = b_a * b_softplus
+
+    # Keep the upstream dot, including its nonfinite propagation behavior.
+    # Padded rows contribute only to masked output rows for finite inputs.
+    o_c = tl.arange(0, BT)
+    m_cumsum = tl.where(o_c[:, None] >= o_c[None, :], 1.0, 0.0)
+    b_y = tl.dot(m_cumsum, b_gate, allow_tf32=False) * cumsum_scale
+    tl.store(p_y, b_y.to(p_y.dtype.element_ty), mask=m_g)
+
+
+def _select_kernel(device, heads, chunks, batches, chunk_size, auto_indices):
+    """Choose an algorithm before tuning its tile/warp configuration.
+
+    On HCU/MACA, short launches favor the native matrix-prefix schedule. Use
+    scan after a conservative launch-coverage estimate reaches one quarter of
+    the device thread capacity, counted in minimum-warp full-head chunk groups.
+    This is a coverage heuristic, not an achieved-occupancy or capacity claim.
+    """
+    if runtime.device.vendor_name not in ("hygon", "metax") or chunk_size > 64:
+        return kda_gate_cumsum_fwd_kernel
+    if auto_indices:
+        return _kda_gate_cumsum_dot_kernel
+    props = runtime.torch_device_fn.get_device_properties(device)
+    units = getattr(props, "multi_processor_count", 0)
+    threads = getattr(props, "max_threads_per_multi_processor", 0)
+    warp_size = getattr(props, "warp_size", 0)
+    if not (units and threads and warp_size):
+        return kda_gate_cumsum_fwd_kernel
+    minimum_groups = triton.cdiv(units * threads, 4 * _MIN_SCAN_WARPS * warp_size)
+    if chunks * batches * heads < minimum_groups:
+        return _kda_gate_cumsum_dot_kernel
+    return kda_gate_cumsum_fwd_kernel
 
 
 def _check_tensor(name, tensor, device, dtypes):
@@ -259,7 +394,10 @@ def fused_kda_gate_chunk_cumsum(
         return (triton.cdiv(D, meta["BD"]), NT, grid_batches * H)
 
     with runtime.torch_device_fn.device(raw_g.device):
-        kda_gate_cumsum_fwd_kernel[grid](
+        kernel = _select_kernel(
+            raw_g.device, H, NT, grid_batches, chunk_size, auto_indices
+        )
+        kernel[grid](
             g=raw_g,
             A=A_log,
             y=y,
