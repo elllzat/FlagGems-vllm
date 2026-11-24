@@ -464,29 +464,3 @@ fused_kda_gate_chunk_cumsum_wave64:
   - META: {BD: 128, LANE_T: 32}
     num_warps: 4
     num_stages: 1
-
-fused_kda_gate_chunk_cumsum:
-  - META: {BD: 32}
-    num_warps: 2
-    num_stages: 3
-  - META: {BD: 32}
-    num_warps: 4
-    num_stages: 3
-  - META: {BD: 32}
-    num_warps: 8
-    num_stages: 3
-  - META: {BD: 64}
-    num_warps: 2
-    num_stages: 3
-  - META: {BD: 64}
-    num_warps: 4
-    num_stages: 3
-  - META: {BD: 64}
-    num_warps: 8
-    num_stages: 3
-  - META: {BD: 128}
-    num_warps: 4
-    num_stages: 3
-  - META: {BD: 128}
-    num_warps: 8
-    num_stages: 3
