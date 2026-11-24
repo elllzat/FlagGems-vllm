@@ -3,11 +3,14 @@
 """Validate captured contracts and run paired device-Graph measurements."""
 
 import argparse
+import copy
+import hashlib
 import importlib
 import importlib.util
 import json
 import math
 import statistics
+import subprocess
 import sys
 import types
 from pathlib import Path
@@ -52,7 +55,13 @@ def fresh_baseline(index):
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     spec.loader.exec_module(module)
-    return module.fused_kda_gate_chunk_cumsum
+    return module.fused_kda_gate_chunk_cumsum, module.kda_gate_cumsum_fwd_kernel
+
+
+def tuner_of(kernel):
+    while not hasattr(kernel, "configs"):
+        kernel = kernel.fn
+    return kernel
 
 
 def capture(call, api, repeats):
@@ -98,9 +107,27 @@ def main():
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--rounds", type=int, default=5)
     parser.add_argument("--repeats", type=int, default=64)
+    parser.add_argument(
+        "--candidate-bd-list", help="Explicit candidate-only tuning trial"
+    )
     parser.add_argument("--output", type=Path, required=True)
     options = parser.parse_args()
     library, candidate = load_operator(options.isolated)
+    candidate_kernel = importlib.import_module(
+        "flaggems_vllm.ops.fused_kda_gate_chunk_cumsum"
+    ).kda_gate_cumsum_fwd_kernel
+    candidate_tuner = tuner_of(candidate_kernel)
+    if options.candidate_bd_list:
+        bds = [int(x) for x in options.candidate_bd_list.split(",")]
+        if any(x not in (16, 32, 64, 128) for x in bds):
+            parser.error("Candidate BD values must be 16, 32, 64 or 128")
+        configs = {}
+        for bd in bds:
+            for original in candidate_tuner.configs:
+                config = copy.deepcopy(original)
+                config.kwargs["BD"] = bd
+                configs[(bd, config.num_warps, config.num_stages)] = config
+        candidate_tuner.configs = list(configs.values())
     if options.functional:
         import pytest
 
@@ -127,6 +154,16 @@ def main():
         "vendor": library.vendor_name,
         "device": library.device,
         "torch": torch.__version__,
+        "revision": subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ).strip(),
+        "operator_sha256": hashlib.sha256(
+            (ROOT / "src/flaggems_vllm/ops/fused_kda_gate_chunk_cumsum.py").read_bytes()
+        ).hexdigest(),
+        "baseline_sha256": hashlib.sha256(
+            Path(__file__).with_name("upstream.py").read_bytes()
+        ).hexdigest(),
+        "candidate_bd_trial": options.candidate_bd_list,
         "isolated_operator_import": options.isolated,
         "public_package_import_verified": not options.isolated,
         "method": "device Graph replay with device events",
@@ -156,7 +193,7 @@ def main():
         for name in ("cu_seqlens", "chunk_indices"):
             if name in kwargs:
                 kwargs[name] = kwargs[name].to(getattr(torch, spec["index_dtype"]))
-        upstream = fresh_baseline(index)
+        upstream, upstream_kernel = fresh_baseline(index)
         calls = {
             "baseline": lambda: upstream(*args, **kwargs),
             "gems": lambda: candidate(*args, **kwargs),
@@ -165,6 +202,8 @@ def main():
         for call in calls.values():
             assert_close(call(), expected)
         row = {"case": spec["case"], "correctness": "passed", "rounds": []}
+        row["baseline_config"] = tuner_of(upstream_kernel).best_config.all_kwargs()
+        row["gems_config"] = candidate_tuner.best_config.all_kwargs()
         if not options.validate_only:
             graphs = {}
             for name, call in calls.items():
