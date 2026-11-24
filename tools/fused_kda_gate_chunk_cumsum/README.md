@@ -51,18 +51,20 @@ nonfinite limitation documented in the handoff experimental scan.
 Production permits only Torch allocation and metadata/no-copy views, with no
 Torch compute fallback. Optional automatic-index processing remains on device.
 
-HCU and MetaX keep an additional Triton matrix-prefix kernel for short launches.
+HCU and MetaX keep an additional Triton matrix-prefix kernel for intermediate launches.
 This is a candidate implementation, not a change to the frozen baseline.
 The host selects the algorithm first; each path separately tunes BD/warps.
 The dispatch compares logical head/chunk groups to a conservative coverage
-estimate: CU count * maximum resident threads / (4 * minimum scan warps *
+estimate: CU count * maximum resident threads / (4 * reference group warps *
 warp size). The factor four is a calibrated 25% coverage heuristic, not a
 physical limit or proof of achieved occupancy. It uses actual device metadata
 instead of a model-specific T threshold. Measured properties are 80 CUs,
 2560 threads/CU and 64-thread waves on BW1000, and 104 CUs, 2048 threads/CU and
-64-thread waves on C550. With the configured two-warp minimum, the estimates
-are 400 and 416 full-head chunk groups. All 38 captured contracts are used to
-validate the crossover; neither slow cases nor baseline candidates are removed.
+64-thread waves on C550. The original configuration family's two-warp group
+is the reference unit, so the estimates remain 400 and 416 full-head chunk
+groups even when a vendor tuner adds one-warp scan candidates. All 38 contracts
+are used to validate the crossover; neither slow cases nor baseline candidates
+are removed.
 Other backends keep the scan path. Automatic-index rectangular grids use the
 matrix path on HCU/MetaX for small chunks because idle programs would otherwise
 inflate that coverage estimate.
@@ -76,9 +78,11 @@ exception applies to the 38 actual contracts, which all use chunk=64.
 ## Frozen validation and measurement
 
 Base: upstream main `248d413c`. Operator, exports, metadata, NVIDIA tuning YAML,
-tests and benchmark use the standard repository drop points. The YAML supplies
-BD=32/64 x num_warps=2/4/8, num_stages=3, reused through the configuration
-loader's normal default-backend mechanism on other vendors. `libtuner` uses
+tests and benchmark use the standard repository drop points. The default YAML
+supplies BD=32/64 x num_warps=2/4/8, num_stages=3. HCU scan and MACA short
+safe-gate paths have separate eight-candidate vendor entries; their matrix
+paths retain the default six candidates. Other backends use the configuration
+loader's normal default-backend mechanism. `libtuner` uses
 device Graph timing and the handoff workload keys, including shape and index
 metadata. Unsupported backend configuration failures must be reported, not
 replaced silently with another baseline or an eager timing method.
@@ -102,6 +106,15 @@ Each final Graph contains 256 calls, with three replay warmups and seven event
 samples per latency. Earlier 64-call trials are retained separately. Candidate
 configuration reporting records the actual LibEntry launch, including cache
 hits; reading the tuner's last best_config alone can describe a previous case.
+The default capture loop discards each intermediate return, as the installed
+`triton.testing.do_bench_cudagraph` does, and retains only the final output for
+replay validation. Both implementations use this same lifetime and separate
+private Graph pools. The earlier loop kept the previous output alive during
+the next allocation, usually alternating two buffers. A pool diagnostic showed
+that output addresses affected the MACA T=255/256 timings. This establishes
+address sensitivity, not a specific cache/bank cause. The corrected loop is a
+measurement fix, not a kernel optimization. `--legacy-retain-output` reproduces
+that historical diagnostic; do not mix its numbers with the standard results.
 Acceptance follows workflow.md (no key shape below 0.9x); the handoff's 1.1x
 optimization goal is reported separately in the results below.
 
@@ -110,9 +123,96 @@ failures. It loads the actual runtime/utilities/operator from the same checkout,
 marks public-package integration unverified and deselects its integration test.
 It must not be reported as a full public-package pass.
 
-## Results, 2026-11-24
+## Follow-up schedules
 
-The final five-round, 256-call Graph reports are preserved in
+The follow-up keeps the original 38 cases, pinned reference and five-round
+256-call Graph method with the output-lifetime correction above. All arithmetic
+remains FP32 before the requested output
+conversion. It adds these operator-local schedules:
+
+1. **Head-first program order.** The launch dimensions are unchanged. A bijective
+   permutation makes adjacent programs visit adjacent heads before moving to
+   another token chunk. This brings neighboring programs closer in the BTHD
+   input layout; it does not combine prefix sums across heads or sequences.
+2. **Bounded 32-bit token offsets on HCU/MACA.** Common shapes use 32-bit token
+   arithmetic when the tensor plus a padded chunk fits the signed range. Larger
+   token offsets keep the original 64-bit route. The head/chunk permutation has
+   a separate 2^31-program guard, including idle automatic-index combinations.
+   No host pointer-specialization cache or compiler-wide switch is added.
+3. **Short physical token tiles.** For T <= chunk_size/2, the physical row count
+   becomes next_power_of_2(T); the logical chunk size, sequence offsets and
+   reset boundaries stay unchanged. For captured T=1/2/4 this avoids computing
+   64 gate rows and a full triangular matrix. One representative omitted padded
+   gate row preserves the original dot's 0*NaN/Inf behavior. Six new tests cover
+   this distinction, including infinite A and zero bias.
+4. **HCU scan configurations.** The scan has its own vendor entry: BD=32/64/128
+   with 1/2/4 waves where applicable (eight candidates), one pipeline stage.
+   A native wave contains 64 threads. For the captured chunk=64 cases, the
+   largest candidate has 64*128 FP32 elements (32 KiB of values) spread across
+   four waves, or 32 values per
+   thread before other live data. This constrains the register working set;
+   one-wave alternatives remove inter-wave scan communication on small tiles.
+   There is no staged loop requiring a multi-stage memory pipeline. The matrix
+   path keeps its separate original six candidates.
+5. **MACA short safe-gate layouts.** When Gluon is available, the short safe
+   path explicitly assigns [LANE_T, 64/LANE_T] lanes to token/channel axes and
+   [1, num_warps] waves to those axes. LANE_T=16/32 keeps each channel's scan
+   inside one wave plus that thread's registers; independent waves own channel
+   groups. Eight BD/lane/wave candidates balance contiguous channel access,
+   register work and independent groups. Sample compiled kernels report zero
+   shared memory and zero CTA-barrier calls. Longer inputs keep standard
+   Triton matrix/scan paths because this layout regressed in the initial probe.
+
+The installed HCU compiler exposes Gluon but its layout inference raises a
+missing-HCUMFMALayout error. HCU therefore uses standard Triton; this is a
+compiler-package limitation, not a hardware statement. No shared compiler
+package is patched. NVIDIA/PPU retain their standard scan route and tuning
+family; Gluon decoration and the new vendor-only configuration entries are
+not used on those backends.
+
+`probe_graph_pool.py` is a separate allocation-address diagnostic. It uses
+unchanged public operators and their normal tuners, records output addresses,
+and compares separate/shared pools with a common capture stream. Its results
+must not replace the fixed acceptance method or be mixed into the aggregate.
+
+## Optimized HCU/MACA validation, 2026-11-24
+
+[`validation/optimized_2026-11-24.json`](validation/optimized_2026-11-24.json)
+preserves all 38 cases and five paired rounds from both final reports, plus
+configuration/source identities, full functional summaries and the separate
+pool diagnostic. The tested production source SHA256 is
+`6d8208de00a3f0be7a778b99f1c54fd352ee5c9fa3e39029244c88c54b863bd2`.
+The current operator, vendor YAMLs and tests have the same Git blobs as the
+full-functional snapshot `adedc64`. HCU performance was measured at `342fd5c`
+and the final MACA report at `14d05be`; the HCU configuration is unchanged
+between those revisions.
+
+| Platform | Geometric mean | Minimum | Cases >= 1.1x | Full functional validation |
+| --- | ---: | ---: | ---: | --- |
+| HCU BW1000 | 1.180x | 1.001x | 20/38 | 216 passed |
+| MetaX C550 | 1.178x | 0.996x | 22/38 | 204 passed, 12 baseline resource xfails |
+
+Both meet the **1.1x geometric-mean** goal and the 0.9x per-case workflow floor.
+This does not claim every individual case reaches 1.1x. Both use their public
+package exports in the user's own containers. Each also passed the standard
+repository CUDA Graph benchmark smoke (one test covering all 38 safe-gate
+contracts; the other gate-mode parameter is deselected). Baseline source, its
+six candidates and original key are unchanged. No captured case is omitted.
+NVIDIA/PPU have no new performance run in this follow-up; their old results
+remain historical below. The initial reports used the previous output lifetime,
+so their timings are not a controlled before/after comparison to this table.
+
+Two extra MACA experiments were removed. An output `evict_first` hint produced
+identical normalized LLVM instruction streams for three inspected kernel pairs
+with the installed backend; it is not credited with a performance gain.
+Adding BD=128 to the base matrix/scan family selected no new configuration in
+38 cases, so those two candidates were removed as well. HCU scan and MACA
+short Gluon entries still retain their own BD=128 candidates. Applying the
+short Gluon layout to longer inputs also regressed and was not retained.
+
+## Initial portable validation, 2026-11-24 (13d176f)
+
+The initial five-round, 256-call Graph reports are preserved in
 [`validation/graph_2026-11-24.json`](validation/graph_2026-11-24.json), including
 every case, round, actual launch configuration, revision and source hashes.
 All four reports measure the same production source SHA256
@@ -128,7 +228,7 @@ backend; these numbers do not compare against a separate vendor-native kernel.
 | PPU (isolated operator) | 1.613x | 1.305x | 38/38 | 208 passed, public integration deselected; final quick 120 passed |
 
 All 38 actual cases on each measured backend meet the workflow's 0.9x minimum.
-HCU has not reached the handoff's 1.1x geometric-mean aspiration. PPU numbers
+At that snapshot HCU had not reached the 1.1x geometric-mean goal. PPU numbers
 retain the isolated-operator qualification described below. Functional runs
 cover both gate modes, multiple float/output/index types, packed/dense inputs,
 tails, empty inputs, unsupported metadata and nonfinite g/A/bias. The C550
@@ -170,7 +270,7 @@ five-round paired runner, not a mixture of benchmark methods.
 - MThreads: JumpServer currently returns no asset for 10.121.38.73; no run is
   claimed for that platform. Other unlisted hardware has no new measurement.
 
-Two candidate-only BD=128 experiments are not the default production config.
+Two initial candidate-only BD=128 experiments were not the default config.
 The first is invalid for assessing the expanded search because it reused the
 six-config persistent winner. The second resets the candidate cache identity
 and uses a dedicated cache directory: larger scan tiles help some large HCU
