@@ -39,7 +39,7 @@ _MIN_SCAN_WARPS = min(
 )
 log = libdevice.fast_logf if os.environ.get("FLA_USE_FAST_OPS", "0") == "1" else tl.log
 
-_WAVE64_SCHEDULE = runtime.device.vendor_name in ("hygon", "metax")
+_WAVE64_SCHEDULE = tl.constexpr(runtime.device.vendor_name in ("hygon", "metax"))
 
 
 @triton.jit
