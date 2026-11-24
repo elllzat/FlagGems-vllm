@@ -152,6 +152,18 @@ def test_nonfinite_parameters_and_padded_rows(parameter, value, safe):
     assert_close(port(*args, **kwargs), upstream(*args, **kwargs))
 
 
+@pytest.mark.parametrize("tokens", [1, 2, 4])
+@pytest.mark.parametrize("safe", [False, True])
+def test_short_physical_tile_preserves_logical_padding(tokens, safe):
+    # The visible safe gate is finite, but exp(+Inf)*zero in an omitted padded
+    # row is NaN. The original triangular dot propagates it to visible output.
+    args, kwargs = make_inputs(Case("short_padding", T=tokens), safe=safe)
+    args[0].fill_(0.1)
+    args[1].fill_(float("inf"))
+    kwargs["g_bias"].zero_()
+    assert_close(port(*args, **kwargs), upstream(*args, **kwargs))
+
+
 @pytest.mark.parametrize("shape", [(0, 65, 4, 128), (1, 0, 4, 128)])
 def test_empty(shape):
     g = torch.empty(shape, device=flaggems_vllm.device, dtype=torch.bfloat16)

@@ -79,9 +79,12 @@ def recorded_launch(call, entry):
         output = call()
     finally:
         entry.run = original_run
-    return output, {
+    config = {
         name: metadata[name] for name in ("BD", "num_warps", "num_ctas", "num_stages")
     }
+    if "LANE_T" in metadata:
+        config["LANE_T"] = metadata["LANE_T"]
+    return output, config
 
 
 def capture(call, api, repeats):
@@ -136,7 +139,8 @@ def main():
     candidate_module = importlib.import_module(
         "flaggems_vllm.ops.fused_kda_gate_chunk_cumsum"
     )
-    candidate_kernel = candidate_module.kda_gate_cumsum_fwd_kernel
+    standard_scan = candidate_module.kda_gate_cumsum_fwd_kernel
+    candidate_kernel = candidate_module._wave64_scan_kernel or standard_scan
     candidate_tuner = tuner_of(candidate_kernel)
     if options.candidate_bd_list:
         bds = [int(x) for x in options.candidate_bd_list.split(",")]
@@ -238,13 +242,24 @@ def main():
             else (values["T"] + values["chunk"] - 1) // values["chunk"]
         )
         active_kernel = candidate_module._select_kernel(
-            args[0].device, values["H"], chunks, batches, values["chunk"], automatic
+            args[0].device,
+            values["H"],
+            chunks,
+            batches,
+            values["chunk"],
+            automatic,
+            values["T"],
+            kwargs["safe_gate"],
         )
         assert_close(calls["baseline"](), expected)
         actual, launched_config = recorded_launch(calls["gems"], active_kernel)
         assert_close(actual, expected)
         del actual
-        row["algorithm"] = "scan" if active_kernel is candidate_kernel else "dot"
+        row["algorithm"] = (
+            "wave64_scan"
+            if active_kernel is candidate_module._wave64_scan_kernel
+            else "scan" if active_kernel is standard_scan else "dot"
+        )
         row["baseline_config"] = tuner_of(upstream_kernel).best_config.all_kwargs()
         row["gems_config"] = launched_config
         if not options.validate_only:

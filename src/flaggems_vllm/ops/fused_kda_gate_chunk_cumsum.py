@@ -31,6 +31,12 @@ import triton.language.extra.libdevice as libdevice
 from flaggems_vllm import runtime
 from flaggems_vllm.utils import libentry, libtuner
 
+try:
+    from triton.experimental import gluon
+    from triton.experimental.gluon import language as gl
+except ImportError:
+    gluon = None
+
 RCP_LN2 = 1.4426950216
 _FLOAT_DTYPES = (torch.float16, torch.bfloat16, torch.float32)
 _MIN_SCAN_WARPS = min(
@@ -114,6 +120,9 @@ def kda_gate_cumsum_fwd_kernel(
     TUNE_B: tl.constexpr,
     TUNE_N: tl.constexpr,
 ):
+    BLOCK_T: tl.constexpr = (
+        triton.next_power_of_2(min(TUNE_T, BT)) if _WAVE64_SCHEDULE else BT
+    )
     i_d = tl.program_id(0)
     i_t, i_bh = _program_coordinates(H, D, BT, TUNE_T, TUNE_NT, TUNE_B)
     i_b, i_h = i_bh // H, i_bh % H
@@ -138,7 +147,7 @@ def kda_gate_cumsum_fwd_kernel(
     else:
         bos = i_b * T
 
-    o_t = i_t * BT + tl.arange(0, BT)
+    o_t = i_t * BT + tl.arange(0, BLOCK_T)
     o_d = i_d * BD + tl.arange(0, BD)
     m_t = o_t < T
     m_g = m_t[:, None] & (o_d[None, :] < D)
@@ -166,12 +175,32 @@ def kda_gate_cumsum_fwd_kernel(
     # A triangular dot multiplies future rows by zero. IEEE 0*NaN/Inf is NaN,
     # so preserve that behavior without requiring matrix hardware on a backend.
     # Include padded gate rows: their nonfinite values also affect the dot.
-    o_c = tl.arange(0, BT)
+    o_c = tl.arange(0, BLOCK_T)
     nonfinite = (b_gate != b_gate) | (tl.abs(b_gate) == float("inf"))
     last_nonfinite = tl.max(tl.where(nonfinite, o_c[:, None], -1), axis=0)
     b_gate = tl.where(m_g, b_gate, 0.0)
     b_y = tl.cumsum(b_gate, axis=0)
     b_y = tl.where(o_c[:, None] < last_nonfinite[None, :], float("nan"), b_y)
+    if BLOCK_T < BT:
+        # The short physical tile omits some rows of the logical chunk.
+        # A nonfinite padded gate in the original dot still contaminates every
+        # visible row through 0*NaN/Inf. Evaluate one representative padded row.
+        if HAS_BIAS:
+            b_pad = b_bias
+        else:
+            b_pad = tl.full((BD,), 0.0, tl.float32)
+        if SAFE_GATE:
+            pad_gate = LOWER_BOUND / (1.0 + tl.exp(-(b_a * b_pad)))
+        else:
+            pad_scaled = b_pad * beta
+            pad_softplus = tl.where(
+                pad_scaled > threshold,
+                b_pad,
+                (1.0 / beta) * log(1.0 + tl.exp(pad_scaled)),
+            )
+            pad_gate = b_a * pad_softplus
+        pad_nonfinite = (pad_gate != pad_gate) | (tl.abs(pad_gate) == float("inf"))
+        b_y = tl.where(pad_nonfinite[None, :], float("nan"), b_y)
     b_y = tl.where(b_y == 0.0, 0.0, b_y) * cumsum_scale
     tl.store(p_y, b_y.to(p_y.dtype.element_ty), mask=m_g)
 
@@ -283,7 +312,171 @@ def _kda_gate_cumsum_dot_kernel(
     tl.store(p_y, b_y.to(p_y.dtype.element_ty), mask=m_g)
 
 
-def _select_kernel(device, heads, chunks, batches, chunk_size, auto_indices):
+_wave64_scan_kernel = None
+if gluon is not None and runtime.device.vendor_name in ("hygon", "metax"):
+
+    @gluon.jit
+    def _wave64_sum(a, b):
+        return a + b
+
+    @libentry()
+    @triton.heuristics(
+        {
+            "HAS_BIAS": lambda args: args["g_bias"] is not None,
+            "IS_VARLEN": lambda args: args["cu_seqlens"] is not None,
+        }
+    )
+    @libtuner(
+        configs=runtime.get_tuned_config("fused_kda_gate_chunk_cumsum_wave64"),
+        key=[
+            "H",
+            "D",
+            "BT",
+            "IS_VARLEN",
+            "AUTO_INDICES",
+            "HAS_BIAS",
+            "SAFE_GATE",
+            "TUNE_T",
+            "TUNE_NT",
+            "TUNE_B",
+            "TUNE_N",
+        ],
+        use_cuda_graph=True,
+    )
+    @gluon.jit(do_not_specialize=["T"])
+    def _kda_gate_cumsum_wave64_kernel(
+        g,
+        A,
+        y,
+        g_bias,
+        cu_seqlens,
+        chunk_indices,
+        cumsum_scale,
+        beta,
+        threshold,
+        SAFE_GATE: gl.constexpr,
+        LOWER_BOUND: gl.constexpr,
+        T,
+        H: gl.constexpr,
+        D: gl.constexpr,
+        BT: gl.constexpr,
+        BD: gl.constexpr,
+        LANE_T: gl.constexpr,
+        HAS_BIAS: gl.constexpr,
+        IS_VARLEN: gl.constexpr,
+        AUTO_INDICES: gl.constexpr,
+        TUNE_T: gl.constexpr,
+        TUNE_NT: gl.constexpr,
+        TUNE_B: gl.constexpr,
+        TUNE_N: gl.constexpr,
+    ):
+        BLOCK_T: gl.constexpr = triton.next_power_of_2(min(TUNE_T, BT))
+        layout: gl.constexpr = gl.BlockedLayout(
+            [1, 1], [LANE_T, 64 // LANE_T], [1, gl.num_warps()], [1, 0]
+        )
+        i_d = gl.program_id(0)
+        i_t, i_bh = gl.program_id(1), gl.program_id(2)
+        linear = i_t + i_bh * TUNE_NT
+        i_t = (linear // H) % TUNE_NT
+        i_bh = linear % H + (linear // (H * TUNE_NT)) * H
+        if (TUNE_T + BT) * H * D * TUNE_B >= 2**31:
+            i_t = i_t.to(gl.int64)
+        i_b, i_h = i_bh // H, i_bh % H
+        if IS_VARLEN:
+            if AUTO_INDICES:
+                # Rectangular sequence/chunk grid: no host tensor reads or index
+                # construction. Empty/short sequences simply skip excess programs.
+                i_n = i_b
+            else:
+                i_n, i_t = (
+                    gl.load(chunk_indices + i_t * 2).to(gl.int32),
+                    gl.load(chunk_indices + i_t * 2 + 1).to(i_t.dtype),
+                )
+            bos, eos = (
+                gl.load(cu_seqlens + i_n).to(gl.int32),
+                gl.load(cu_seqlens + i_n + 1).to(gl.int32),
+            )
+            T = eos - bos
+            if AUTO_INDICES:
+                if i_t * BT >= T:
+                    return
+        else:
+            bos = i_b * T
+
+        o_t = i_t * BT + gl.arange(0, BLOCK_T, layout=gl.SliceLayout(1, layout))
+        o_d = i_d * BD + gl.arange(0, BD, layout=gl.SliceLayout(0, layout))
+        m_t = o_t < T
+        m_g = m_t[:, None] & (o_d[None, :] < D)
+        p_g = g + (bos * H + i_h) * D + o_t[:, None] * (H * D) + o_d[None, :]
+        p_y = y + (bos * H + i_h) * D + o_t[:, None] * (H * D) + o_d[None, :]
+
+        b_g = gl.load(p_g, mask=m_g, other=0.0).to(gl.float32)
+        if HAS_BIAS:
+            b_bias = gl.load(g_bias + i_h * D + o_d, mask=o_d < D, other=0.0).to(
+                gl.float32
+            )
+            b_g = b_g + b_bias[None, :]
+
+        b_a = gl.load(A + i_h).to(gl.float32)
+        b_a = gl.exp(b_a) if SAFE_GATE else -gl.exp(b_a)
+        if SAFE_GATE:
+            b_gate = LOWER_BOUND / (1.0 + gl.exp(-(b_a * b_g)))
+        else:
+            b_g_scaled = b_g * beta
+            b_softplus = gl.where(
+                b_g_scaled > threshold,
+                b_g,
+                (1.0 / beta) * gl.log(1.0 + gl.exp(b_g_scaled)),
+            )
+            b_gate = b_a * b_softplus
+
+        # A triangular dot multiplies future rows by zero. IEEE 0*NaN/Inf is NaN,
+        # so preserve that behavior without requiring matrix hardware on a backend.
+        # Include padded gate rows: their nonfinite values also affect the dot.
+        o_c = gl.arange(0, BLOCK_T, layout=gl.SliceLayout(1, layout))
+        nonfinite = (b_gate != b_gate) | (gl.abs(b_gate) == float("inf"))
+        last_nonfinite = gl.max(gl.where(nonfinite, o_c[:, None], -1), axis=0)
+        b_gate = gl.where(m_g, b_gate, 0.0)
+        b_y = gl.associative_scan(b_gate, 0, _wave64_sum)
+        b_y = gl.where(o_c[:, None] < last_nonfinite[None, :], float("nan"), b_y)
+        if BLOCK_T < BT:
+            # The short physical tile omits some rows of the logical chunk.
+            # A nonfinite padded gate in the original dot still contaminates every
+            # visible row through 0*NaN/Inf. Evaluate one representative padded row.
+            if HAS_BIAS:
+                b_pad = b_bias
+            else:
+                b_pad = gl.full(
+                    (BD,), 0.0, gl.float32, layout=gl.SliceLayout(0, layout)
+                )
+            if SAFE_GATE:
+                pad_gate = LOWER_BOUND / (1.0 + gl.exp(-(b_a * b_pad)))
+            else:
+                pad_scaled = b_pad * beta
+                pad_softplus = gl.where(
+                    pad_scaled > threshold,
+                    b_pad,
+                    (1.0 / beta) * gl.log(1.0 + gl.exp(pad_scaled)),
+                )
+                pad_gate = b_a * pad_softplus
+            pad_nonfinite = (pad_gate != pad_gate) | (gl.abs(pad_gate) == float("inf"))
+            b_y = gl.where(pad_nonfinite[None, :], float("nan"), b_y)
+        b_y = gl.where(b_y == 0.0, 0.0, b_y) * cumsum_scale
+        gl.store(p_y, b_y.to(p_y.dtype.element_ty), mask=m_g)
+
+    _wave64_scan_kernel = _kda_gate_cumsum_wave64_kernel
+
+
+def _select_kernel(
+    device,
+    heads,
+    chunks,
+    batches,
+    chunk_size,
+    auto_indices,
+    tokens=None,
+    safe_gate=None,
+):
     """Choose an algorithm before tuning its tile/warp configuration.
 
     On HCU/MACA, short launches favor the native matrix-prefix schedule. Use
@@ -291,7 +484,11 @@ def _select_kernel(device, heads, chunks, batches, chunk_size, auto_indices):
     the device thread capacity, counted in minimum-warp full-head chunk groups.
     This is a coverage heuristic, not an achieved-occupancy or capacity claim.
     """
+    if _wave64_scan_kernel is not None and safe_gate:
+        return _wave64_scan_kernel
     if runtime.device.vendor_name not in ("hygon", "metax") or chunk_size > 64:
+        return kda_gate_cumsum_fwd_kernel
+    if tokens is not None and 0 < tokens <= chunk_size // 2:
         return kda_gate_cumsum_fwd_kernel
     if auto_indices:
         return _kda_gate_cumsum_dot_kernel
@@ -421,7 +618,7 @@ def fused_kda_gate_chunk_cumsum(
 
     with runtime.torch_device_fn.device(raw_g.device):
         kernel = _select_kernel(
-            raw_g.device, H, NT, grid_batches, chunk_size, auto_indices
+            raw_g.device, H, NT, grid_batches, chunk_size, auto_indices, T, safe_gate
         )
         kernel[grid](
             g=raw_g,
