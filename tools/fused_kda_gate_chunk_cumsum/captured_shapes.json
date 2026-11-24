@@ -1,0 +1,4961 @@
+{
+  "schema_version": 1,
+  "operator": "fused_kda_gate_chunk_cumsum",
+  "triton_kernel": "kda_gate_cumsum_fwd_kernel",
+  "source_kind": "full_model_dummy_runtime",
+  "provenance": "full_model_dummy_runtime",
+  "phase": "request",
+  "input_values": "not captured; deterministic regeneration by existing constructor",
+  "source_file": "tools/kda_shape_capture/results/coverage-20261106T055716Z-37e253cb/dataset/benchmark_cases.json",
+  "original_sha256": "7f8c60866a03e5f46652b8458a5a9562c3c2851c83055e9b1278255245611a5f",
+  "cases": [
+    {
+      "case": {
+        "name": "runtime_a8c7752a0a92",
+        "B": 1,
+        "T": 1,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          1
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        4096,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 1,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 1,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              1,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              4096,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              1,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              4096,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              1,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          1
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_af352f584d9a",
+        "B": 1,
+        "T": 2,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          2
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        8192,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 2,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 1,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              2,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              8192,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              2,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              8192,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              1,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          2
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_4ee0fa444880",
+        "B": 1,
+        "T": 4,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          4
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        16384,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 4,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 1,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              4,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              16384,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              4,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              16384,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              1,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          4
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_7aaf0bb477a8",
+        "B": 1,
+        "T": 63,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          63
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        258048,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 63,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 1,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              63,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              258048,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              63,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              258048,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              1,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          63
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_8c6f61ee75f3",
+        "B": 1,
+        "T": 64,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          64
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        262144,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 64,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 1,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              64,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              262144,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              64,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              262144,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              1,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          64
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_c8220a9db0ec",
+        "B": 1,
+        "T": 65,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          65
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        266240,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 65,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 2,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              65,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              266240,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              65,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              266240,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              2,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          65
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_2fa3bd15d4b3",
+        "B": 1,
+        "T": 67,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          67
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        274432,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 67,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 2,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              67,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              274432,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              67,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              274432,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              2,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          67
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_3404fd0f0046",
+        "B": 1,
+        "T": 127,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          127
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        520192,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 127,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 2,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              127,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              520192,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              127,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              520192,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              2,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          127
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_731f5f5f93d0",
+        "B": 1,
+        "T": 128,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          128
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        524288,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 128,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 2,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              128,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              524288,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              128,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              524288,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              2,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          128
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_7136eb98f125",
+        "B": 1,
+        "T": 129,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          64,
+          65
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        528384,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 129,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 3,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              129,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              528384,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              129,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              528384,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              3
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              3,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          64,
+          65
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_2e37a8a061e2",
+        "B": 1,
+        "T": 129,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          129
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        528384,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 129,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 3,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              129,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              528384,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              129,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              528384,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              3,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          129
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_d3e9f659e9f4",
+        "B": 1,
+        "T": 130,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          65,
+          65
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        532480,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 130,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 4,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              130,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              532480,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              130,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              532480,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              3
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              4,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          65,
+          65
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_519170d9645e",
+        "B": 1,
+        "T": 133,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          133
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        544768,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 133,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 3,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              133,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              544768,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              133,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              544768,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              3,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          133
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_d7a873a91152",
+        "B": 1,
+        "T": 192,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          64,
+          64,
+          64
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        786432,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 192,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 3,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              192,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              786432,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              192,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              786432,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              4
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              3,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          64,
+          64,
+          64
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_dff4964b49da",
+        "B": 1,
+        "T": 195,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          65,
+          65,
+          65
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        798720,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 195,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 6,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              195,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              798720,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              195,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              798720,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              4
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              6,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          65,
+          65,
+          65
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_e360a24e5ecf",
+        "B": 1,
+        "T": 255,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          255
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        1044480,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 255,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 4,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              255,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              1044480,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              255,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1044480,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              4,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          255
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_3876756b0ea2",
+        "B": 1,
+        "T": 256,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          1,
+          65,
+          190
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        1048576,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 6,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              4
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              6,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          1,
+          65,
+          190
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_96b26719619c",
+        "B": 1,
+        "T": 256,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          1,
+          255
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        1048576,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 5,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              3
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              5,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          1,
+          255
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_63ae191c5e14",
+        "B": 1,
+        "T": 256,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          2,
+          254
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        1048576,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 5,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              3
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              5,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          2,
+          254
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_45e0f6cfeb2e",
+        "B": 1,
+        "T": 256,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          3,
+          253
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        1048576,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 5,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              3
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              5,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          3,
+          253
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_602f298a1933",
+        "B": 1,
+        "T": 256,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          64,
+          64,
+          64,
+          64
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        1048576,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 4,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              5
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              4,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_c1ba024b2419",
+        "B": 1,
+        "T": 256,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          127,
+          129
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        1048576,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 5,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              3
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              5,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          127,
+          129
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_3ae9cbcbae98",
+        "B": 1,
+        "T": 256,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          128,
+          128
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        1048576,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 4,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              3
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              4,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          128,
+          128
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_df2b19d422cc",
+        "B": 1,
+        "T": 256,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          256
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        1048576,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 4,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              256,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1048576,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              4,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          256
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_37c7365fe59f",
+        "B": 1,
+        "T": 257,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          257
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        1052672,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 257,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 5,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              257,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              1052672,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              257,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1052672,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              5,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          257
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_316f59ced87b",
+        "B": 1,
+        "T": 386,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          129,
+          257
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        1581056,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 386,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 8,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              386,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              1581056,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              386,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1581056,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              3
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              8,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          129,
+          257
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_f22d03c8ddec",
+        "B": 1,
+        "T": 511,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          511
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        2093056,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 511,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 8,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              511,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              2093056,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              511,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              2093056,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              8,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          511
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_591a6724162f",
+        "B": 1,
+        "T": 512,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          512
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        2097152,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 512,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 8,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              512,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              2097152,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              512,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              2097152,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              8,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          512
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_8fc751f26a65",
+        "B": 1,
+        "T": 513,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          513
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        2101248,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 513,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 9,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              513,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              2101248,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              513,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              2101248,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              9,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          513
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_9c9dbdb05c0d",
+        "B": 1,
+        "T": 514,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          128,
+          129,
+          257
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        2105344,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 514,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 10,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              514,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              2105344,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              514,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              2105344,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              4
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              10,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          128,
+          129,
+          257
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_f9f45d7e7063",
+        "B": 1,
+        "T": 1023,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          1023
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        4190208,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 1023,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 16,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              1023,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              4190208,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              1023,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              4190208,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              16,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          1023
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_d2e68a4bde50",
+        "B": 1,
+        "T": 1024,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          1024
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        4194304,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 1024,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 16,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              1024,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              4194304,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              1024,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              4194304,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              16,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          1024
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_4ba35ca371d4",
+        "B": 1,
+        "T": 1025,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          1025
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        4198400,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 1025,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 17,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              1025,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              4198400,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              1025,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              4198400,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              17,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          1025
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_b09999b0b474",
+        "B": 1,
+        "T": 1026,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          1,
+          1025
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        4202496,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 1026,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 18,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              1026,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              4202496,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              1026,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              4202496,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              3
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              18,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          1,
+          1025
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_349ecc8a0ba4",
+        "B": 1,
+        "T": 1026,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          513,
+          513
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        4202496,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 1026,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 18,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              1026,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              4202496,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              1026,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              4202496,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              3
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              18,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          513,
+          513
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_9bab3bb72bb1",
+        "B": 1,
+        "T": 2049,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          2049
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        8392704,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 2049,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 33,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              2049,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              8392704,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              2049,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              8392704,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              33,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          2049
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_0324e9aa6698",
+        "B": 1,
+        "T": 3139,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          65,
+          1025,
+          2049
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        12857344,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 3139,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 52,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              3139,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              12857344,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              3139,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              12857344,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              4
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              52,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          65,
+          1025,
+          2049
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    },
+    {
+      "case": {
+        "name": "runtime_a0163de2177d",
+        "B": 1,
+        "T": 4096,
+        "H": 32,
+        "D": 128,
+        "chunk": 64,
+        "lengths": [
+          4096
+        ]
+      },
+      "dtype": "bfloat16",
+      "output_dtype": "float32",
+      "input_stride": [
+        16777216,
+        4096,
+        128,
+        1
+      ],
+      "index_dtype": "int32",
+      "bias": true,
+      "safe_gate": true,
+      "lower_bound": -5.0,
+      "beta": 1.0,
+      "threshold": 20.0,
+      "cumsum_scale": 1.4426950216,
+      "source_kind": "full_model_dummy_runtime",
+      "tensor_parallel_size": 2,
+      "captured_contract": {
+        "parameters": {
+          "B": 1,
+          "T": 4096,
+          "H": 32,
+          "D": 128,
+          "BT": 64,
+          "NT": 64,
+          "HAS_BIAS": true,
+          "IS_VARLEN": true,
+          "SAFE_GATE": true,
+          "LOWER_BOUND": -5.0,
+          "beta": 1.0,
+          "threshold": 20.0,
+          "cumsum_scale": 1.4426950216
+        },
+        "tensors": {
+          "g": {
+            "shape": [
+              1,
+              4096,
+              32,
+              128
+            ],
+            "dtype": "torch.bfloat16",
+            "stride": [
+              16777216,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "A": {
+            "shape": [
+              32
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "g_bias": {
+            "shape": [
+              4096
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "y": {
+            "shape": [
+              1,
+              4096,
+              32,
+              128
+            ],
+            "dtype": "torch.float32",
+            "stride": [
+              16777216,
+              4096,
+              128,
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "cu_seqlens": {
+            "shape": [
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              1
+            ],
+            "device_type": "cuda"
+          },
+          "chunk_indices": {
+            "shape": [
+              64,
+              2
+            ],
+            "dtype": "torch.int32",
+            "stride": [
+              2,
+              1
+            ],
+            "device_type": "cuda"
+          }
+        },
+        "sequence_lengths": [
+          4096
+        ],
+        "tensor_parallel_size": 2,
+        "model_revision": "config-sha256:bb8f01c42cb92a52ca72e65afb4d5bd8d11aef083cd210e8de25dfb904f23e9f",
+        "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e"
+      }
+    }
+  ]
+}

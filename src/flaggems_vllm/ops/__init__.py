@@ -1,3 +1,4 @@
+from flaggems_vllm.ops.fused_kda_gate_chunk_cumsum import fused_kda_gate_chunk_cumsum
 # Copyright 2026 FlagOS Contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -294,6 +295,7 @@ from flaggems_vllm.ops.vit_attention import (
 )
 
 __all__ = [
+    "fused_kda_gate_chunk_cumsum",
     "act_quant_triton",
     "add_rms_norm",
     "apply_bad_words",

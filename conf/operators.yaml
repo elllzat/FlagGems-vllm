@@ -2652,3 +2652,15 @@ ops:
   - NeuralNetwork
   stages:
   - stable: '3.0'
+
+- id: fused_kda_gate_chunk_cumsum
+  description: KDA gate activation followed by chunk-local inclusive prefix sums in log2 space.
+  for:
+  - fused_kda_gate_chunk_cumsum
+  labels:
+  - fused
+  - vLLM
+  kind:
+  - NeuralNetwork
+  stages:
+  - alpha: "5.5"

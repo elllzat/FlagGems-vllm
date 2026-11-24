@@ -1,0 +1,24 @@
+{
+  "repository": "https://github.com/vllm-project/vllm",
+  "commit": "373614f66dc8dc678faaf33223256f814238b7cb",
+  "source_path": "vllm/models/glm5next/nvidia/ops/third_party/kda/kernels.py",
+  "source_url": "https://raw.githubusercontent.com/vllm-project/vllm/373614f66dc8dc678faaf33223256f814238b7cb/vllm/models/glm5next/nvidia/ops/third_party/kda/kernels.py",
+  "source_sha256": "6f5865164682e2ea475995fbdeb1df6942baecfb06abeee3a4468c7c6344775e",
+  "definitions": {
+    "kda_gate_cumsum_fwd_kernel": [
+      763,
+      847
+    ],
+    "fused_kda_gate_chunk_cumsum": [
+      850,
+      900
+    ]
+  },
+  "extracted_sha256": "aef4217ad767bf746ef45b52b7b43da126d5afbc97844aabb7b773e16dccb71a",
+  "adaptations": [
+    "Bind torch/triton directly, without importing vLLM.",
+    "Bind FLA_CHUNK_SIZE=64 and RCP_LN2=1.4426950216.",
+    "Bind log according to the upstream FLA_USE_FAST_OPS environment flag.",
+    "Use a test-only synchronous index helper when indices are omitted; all timed varlen cases provide prebuilt indices and do not use it."
+  ]
+}
