@@ -56,16 +56,23 @@ PERFORMANCE_CASES = (
 
 
 def make_inputs(
-    case, dtype=torch.bfloat16, bias=True, safe=False, output=torch.float32
+    case,
+    dtype=torch.bfloat16,
+    bias=True,
+    safe=False,
+    output=torch.float32,
+    device="cuda",
 ):
-    generator = torch.Generator(device="cuda").manual_seed(20261027)
-    g = torch.randn(
-        (case.B, case.T, case.H, case.D), device="cuda", generator=generator
-    ).to(dtype)
-    a = torch.randn(case.H, device="cuda", generator=generator) * 0.3 - 1
+    # Test values are synthesized on CPU, then shared by both implementations.
+    # Do not require a vendor-specific random-number generator.
+    generator = torch.Generator(device="cpu").manual_seed(20261027)
+    g = torch.randn((case.B, case.T, case.H, case.D), generator=generator).to(
+        device=device, dtype=dtype
+    )
+    a = (torch.randn(case.H, generator=generator) * 0.3 - 1).to(device)
     a = a.view(1, 1, case.H, 1)
     b = (
-        torch.randn(case.H * case.D, device="cuda", generator=generator) * 0.2
+        (torch.randn(case.H * case.D, generator=generator) * 0.2).to(device)
         if bias
         else None
     )
@@ -85,10 +92,10 @@ def make_inputs(
                 (seq, c) for c in range((length + case.chunk - 1) // case.chunk)
             )
         kwargs["cu_seqlens"] = torch.tensor(
-            boundaries, device="cuda", dtype=torch.int64
+            boundaries, device=device, dtype=torch.int64
         )
         kwargs["chunk_indices"] = torch.tensor(
-            indices, device="cuda", dtype=torch.int64
+            indices, device=device, dtype=torch.int64
         ).reshape(-1, 2)
     return (g, a), kwargs
 

@@ -6,7 +6,7 @@ import os
 
 import torch
 import triton.language as tl
-import triton.language.extra.cuda.libdevice as libdevice
+import triton.language.extra.libdevice as libdevice
 
 FLA_CHUNK_SIZE = 64
 RCP_LN2 = 1.4426950216

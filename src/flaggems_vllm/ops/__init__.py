@@ -1,4 +1,3 @@
-from flaggems_vllm.ops.fused_kda_gate_chunk_cumsum import fused_kda_gate_chunk_cumsum
 # Copyright 2026 FlagOS Contributors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -115,6 +114,7 @@ from flaggems_vllm.ops.fused_indexer_q_rope_quant import fused_indexer_q_rope_qu
 from flaggems_vllm.ops.fused_indexer_weight_scale import (
     fused_indexer_weight_scale,
 )
+from flaggems_vllm.ops.fused_kda_gate_chunk_cumsum import fused_kda_gate_chunk_cumsum
 from flaggems_vllm.ops.fused_marlin_moe import fused_marlin_moe
 from flaggems_vllm.ops.fused_moe import (
     dispatch_fused_moe_kernel,

@@ -9,8 +9,10 @@ vllm/models/glm5next/nvidia/ops/third_party/kda/kernels.py:763-900.
 The upstream file credits flash-linear-attention (MIT), Copyright (c)
 2023-2025, Songlin Yang, Yu Zhang.
 
-The original gate formulas, FP32 triangular-dot accumulation and post-sum
-RCP_LN2 scaling are retained. Changes: repository tuner/device integration,
+The original gate formulas and post-sum RCP_LN2 scaling are retained. The
+handoff's FP32 inclusive scan replaces the triangular matrix multiplication.
+Nonfinite values retain the upstream zero-times-NaN/Inf propagation. Changes:
+repository tuner/device integration,
 explicit metadata validation, empty handling, and a correctness-first device
 path for packed inputs without precomputed indices. No vLLM dependency and no
 Torch compute/copy fallback are used.
@@ -23,7 +25,7 @@ import os
 import torch
 import triton
 import triton.language as tl
-import triton.language.extra.cuda.libdevice as libdevice
+import triton.language.extra.libdevice as libdevice
 
 from flaggems_vllm import runtime
 from flaggems_vllm.utils import libentry, libtuner
@@ -131,11 +133,16 @@ def kda_gate_cumsum_fwd_kernel(
         )
         b_gate = b_a * b_softplus
 
-    # Keep the upstream dot, including its nonfinite propagation behavior.
-    # Padded rows contribute only to masked output rows for finite inputs.
+    # A triangular dot multiplies future rows by zero. IEEE 0*NaN/Inf is NaN,
+    # so preserve that behavior without requiring matrix hardware on a backend.
+    # Include padded gate rows: their nonfinite values also affect the dot.
     o_c = tl.arange(0, BT)
-    m_cumsum = tl.where(o_c[:, None] >= o_c[None, :], 1.0, 0.0)
-    b_y = tl.dot(m_cumsum, b_gate, allow_tf32=False) * cumsum_scale
+    nonfinite = (b_gate != b_gate) | (tl.abs(b_gate) == float("inf"))
+    last_nonfinite = tl.max(tl.where(nonfinite, o_c[:, None], -1), axis=0)
+    b_gate = tl.where(m_g, b_gate, 0.0)
+    b_y = tl.cumsum(b_gate, axis=0)
+    b_y = tl.where(o_c[:, None] < last_nonfinite[None, :], float("nan"), b_y)
+    b_y = tl.where(b_y == 0.0, 0.0, b_y) * cumsum_scale
     tl.store(p_y, b_y.to(p_y.dtype.element_ty), mask=m_g)
 
 
@@ -179,8 +186,10 @@ def fused_kda_gate_chunk_cumsum(
     """
     if not isinstance(raw_g, torch.Tensor):
         raise TypeError("raw_g must be a Tensor")
-    if raw_g.device.type != "cuda" or runtime.device.vendor_name != "nvidia":
-        raise NotImplementedError("fused_kda_gate_chunk_cumsum requires NVIDIA CUDA")
+    if runtime.device.vendor_name == "ascend" or runtime.device.name == "cpu":
+        raise NotImplementedError("This implementation targets non-Ascend accelerators")
+    if raw_g.device.type != runtime.device.name:
+        raise NotImplementedError("raw_g must use the active accelerator backend")
     _check_tensor("raw_g", raw_g, raw_g.device, _FLOAT_DTYPES)
     if raw_g.ndim != 4:
         raise ValueError("raw_g must have shape [B,T,H,D]")

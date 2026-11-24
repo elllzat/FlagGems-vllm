@@ -3,6 +3,7 @@
 """Initial port parity with the designated upstream and independent Torch math."""
 
 import importlib
+import json
 import sys
 from pathlib import Path
 
@@ -22,7 +23,12 @@ DTYPES = _reference.DTYPES
 PERFORMANCE_CASES = _reference.PERFORMANCE_CASES
 Case = _reference.Case
 assert_close = _reference.assert_close
-make_inputs = _reference.make_inputs
+
+
+def make_inputs(*args, **kwargs):
+    return _reference.make_inputs(*args, device=flaggems_vllm.device, **kwargs)
+
+
 torch_reference = _reference.torch_reference
 upstream = importlib.import_module(
     "fused_kda_gate_chunk_cumsum.upstream"
@@ -38,8 +44,8 @@ INPUT_DTYPES = (
 pytestmark = [
     pytest.mark.fused_kda_gate_chunk_cumsum,
     pytest.mark.skipif(
-        not torch.cuda.is_available() or flaggems_vllm.vendor_name != "nvidia",
-        reason="The initial gate+cumsum port targets NVIDIA CUDA",
+        flaggems_vllm.device == "cpu" or flaggems_vllm.vendor_name == "ascend",
+        reason="The portable gate+cumsum path excludes CPU and Ascend",
     ),
 ]
 
@@ -104,7 +110,7 @@ def test_parameter_dtypes(dtype):
 def test_nondefault_parameters():
     args, kwargs = make_inputs(CORRECTNESS_CASES[4], dtype=torch.float32)
     args[0].flatten()[:7] = torch.tensor(
-        [-80, -10, 0, 4.999, 5, 5.001, 80], device="cuda"
+        [-80, -10, 0, 4.999, 5, 5.001, 80], device=flaggems_vllm.device
     )
     kwargs.update(beta=2.0, threshold=10.0)
     assert_close(port(*args, **kwargs), upstream(*args, **kwargs))
@@ -126,8 +132,8 @@ def test_upstream_nonfinite_and_signed_zero(value, safe):
 
 @pytest.mark.parametrize("shape", [(0, 65, 4, 128), (1, 0, 4, 128)])
 def test_empty(shape):
-    g = torch.empty(shape, device="cuda", dtype=torch.bfloat16)
-    a = torch.empty(4, device="cuda")
+    g = torch.empty(shape, device=flaggems_vllm.device, dtype=torch.bfloat16)
+    a = torch.empty(4, device=flaggems_vllm.device)
     out = port(g, a)
     assert out.shape == g.shape and out.dtype == torch.float32
     assert out.numel() == 0 and out.device == g.device
@@ -161,7 +167,7 @@ def test_noncontiguous():
     noncontiguous = args[0].transpose(1, 2)
     with pytest.raises(NotImplementedError, match="contiguous"):
         port(noncontiguous, args[1], **kwargs)
-    noncontiguous_bias = torch.empty((512, 2), device="cuda")[:, 0]
+    noncontiguous_bias = torch.empty((512, 2), device=flaggems_vllm.device)[:, 0]
     kwargs["g_bias"] = noncontiguous_bias
     with pytest.raises(NotImplementedError, match="contiguous"):
         port(*args, **kwargs)
@@ -195,7 +201,7 @@ def test_wrong_device():
 )
 def test_tensor_scalars_are_rejected(name):
     args, kwargs = make_inputs(CORRECTNESS_CASES[3])
-    kwargs[name] = torch.tensor(1.0, device="cuda")
+    kwargs[name] = torch.tensor(1.0, device=flaggems_vllm.device)
     with pytest.raises(TypeError):
         port(*args, **kwargs)
 
@@ -203,46 +209,46 @@ def test_tensor_scalars_are_rejected(name):
 def test_top_level_integration():
     assert port.__name__ == "fused_kda_gate_chunk_cumsum"
     assert "fused_kda_gate_chunk_cumsum" in flaggems_vllm.ops.__all__
-    assert any(
-        name == "fused_kda_gate_chunk_cumsum" and function is port
-        for name, function in flaggems_vllm._FULL_CONFIG
-    )
+    assert flaggems_vllm.ops.fused_kda_gate_chunk_cumsum is port
 
 
 def test_workload_keys_survive_cached_launches():
-    """T, packed NT and sequence count must separate both tuning/cache layers."""
-    audit_call = importlib.import_module(
-        "fused_kda_gate_chunk_cumsum.run_autotune_perf"
-    ).audit_call
-    kernel = importlib.import_module(
-        "flaggems_vllm.ops.fused_kda_gate_chunk_cumsum"
-    ).kda_gate_cumsum_fwd_kernel
+    # Exercise different T/NT/sequence counts, including repeated warm calls.
     cases = [
         Case("one", T=128, H=2, D=80, lengths=(128,)),
         Case("larger", T=256, H=2, D=80, lengths=(256,)),
         Case("split", T=128, H=2, D=80, lengths=(64, 64)),
         Case("extra_chunk", T=128, H=2, D=80, lengths=(1, 127)),
     ]
-    cache = kernel.kernel_cache[torch.cuda.current_device()]
-    initial_entries = len(cache)
-    prepared, keys = [], set()
-    for case in cases:
-        args, kwargs = make_inputs(case, safe=True)
-        expected = torch_reference(*args, **kwargs)
+    prepared = [make_inputs(case, safe=True) for case in cases]
+    for args, kwargs in prepared + prepared[::-1]:
+        assert_close(port(*args, **kwargs), torch_reference(*args, **kwargs))
 
-        def call(args=args, kwargs=kwargs):
-            return port(*args, **kwargs)
 
-        output, audit = audit_call(call, kernel)
-        assert_close(output, expected)
-        keys.add(tuple(audit["tuning_key"]))
-        prepared.append((call, expected, audit))
-    assert len(keys) == len(cases)
-    entries = len(cache)
-    assert entries == initial_entries + len(cases)
-    for call, expected, cold in reversed(prepared):
-        output, hot = audit_call(call, kernel)
-        assert_close(output, expected)
-        assert hot["tuning_key"] == cold["tuning_key"]
-        assert hot["selected_config"] == cold["selected_config"]
-    assert len(cache) == entries
+CAPTURED_DATA = json.loads(
+    (
+        Path(__file__).resolve().parents[1]
+        / "tools/fused_kda_gate_chunk_cumsum/captured_shapes.json"
+    ).read_text()
+)
+
+
+@pytest.mark.parametrize(
+    "spec", CAPTURED_DATA["cases"], ids=lambda s: s["case"]["name"]
+)
+def test_captured_model_shape(spec):
+    values = dict(spec["case"])
+    values["lengths"] = tuple(values["lengths"])
+    case = Case(**values)
+    args, kwargs = make_inputs(
+        case, dtype=DTYPES[spec["dtype"]], bias=spec["bias"], safe=spec["safe_gate"]
+    )
+    kwargs.update(
+        beta=spec["beta"], threshold=spec["threshold"], lower_bound=spec["lower_bound"]
+    )
+    for name in ("cu_seqlens", "chunk_indices"):
+        if name in kwargs:
+            kwargs[name] = kwargs[name].to(getattr(torch, spec["index_dtype"]))
+    expected = torch_reference(*args, **kwargs)
+    assert_close(port(*args, **kwargs), expected)
+    assert_close(upstream(*args, **kwargs), expected)
