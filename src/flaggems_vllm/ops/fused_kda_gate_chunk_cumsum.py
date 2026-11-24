@@ -46,9 +46,6 @@ _MIN_SCAN_WARPS = min(
 log = libdevice.fast_logf if os.environ.get("FLA_USE_FAST_OPS", "0") == "1" else tl.log
 
 _WAVE64_SCHEDULE = tl.constexpr(runtime.device.vendor_name in ("hygon", "metax"))
-_DOT_EVICTION_POLICY = tl.constexpr(
-    "evict_first" if runtime.device.vendor_name == "metax" else ""
-)
 _SCAN_CONFIG = (
     "fused_kda_gate_chunk_cumsum_scan"
     if runtime.device.vendor_name == "hygon"
@@ -317,14 +314,7 @@ def _kda_gate_cumsum_dot_kernel(
     o_c = tl.arange(0, BT)
     m_cumsum = tl.where(o_c[:, None] >= o_c[None, :], 1.0, 0.0)
     b_y = tl.dot(m_cumsum, b_gate, allow_tf32=False) * cumsum_scale
-    # Outputs are written once and never read in this kernel. On MACA, lower
-    # their cache priority so output addresses do not evict the reused inputs.
-    tl.store(
-        p_y,
-        b_y.to(p_y.dtype.element_ty),
-        mask=m_g,
-        eviction_policy=_DOT_EVICTION_POLICY,
-    )
+    tl.store(p_y, b_y.to(p_y.dtype.element_ty), mask=m_g)
 
 
 _wave64_scan_kernel = None
