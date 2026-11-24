@@ -39,6 +39,30 @@ _MIN_SCAN_WARPS = min(
 )
 log = libdevice.fast_logf if os.environ.get("FLA_USE_FAST_OPS", "0") == "1" else tl.log
 
+_WAVE64_SCHEDULE = runtime.device.vendor_name in ("hygon", "metax")
+
+
+@triton.jit
+def _program_coordinates(
+    H: tl.constexpr,
+    D: tl.constexpr,
+    BT: tl.constexpr,
+    TUNE_T: tl.constexpr,
+    TUNE_NT: tl.constexpr,
+    TUNE_B: tl.constexpr,
+):
+    i_t, i_bh = tl.program_id(1), tl.program_id(2)
+    if _WAVE64_SCHEDULE:
+        # Adjacent programs visit adjacent heads instead of distant token
+        # chunks of one head. Keep the same number of blocks and chunk pairs.
+        linear = i_t + i_bh * TUNE_NT
+        i_t = (linear // H) % TUNE_NT
+        i_bh = linear % H + (linear // (H * TUNE_NT)) * H
+    # Include a padded chunk in the bound so masked tail offsets cannot wrap.
+    if not _WAVE64_SCHEDULE or (TUNE_T + BT) * H * D * TUNE_B >= 2**31:
+        i_t = i_t.to(tl.int64)
+    return i_t, i_bh
+
 
 @libentry()
 @triton.heuristics(
@@ -90,7 +114,8 @@ def kda_gate_cumsum_fwd_kernel(
     TUNE_B: tl.constexpr,
     TUNE_N: tl.constexpr,
 ):
-    i_d, i_t, i_bh = tl.program_id(0), tl.program_id(1).to(tl.int64), tl.program_id(2)
+    i_d = tl.program_id(0)
+    i_t, i_bh = _program_coordinates(H, D, BT, TUNE_T, TUNE_NT, TUNE_B)
     i_b, i_h = i_bh // H, i_bh % H
     if IS_VARLEN:
         if AUTO_INDICES:
@@ -100,7 +125,7 @@ def kda_gate_cumsum_fwd_kernel(
         else:
             i_n, i_t = (
                 tl.load(chunk_indices + i_t * 2).to(tl.int32),
-                tl.load(chunk_indices + i_t * 2 + 1).to(tl.int64),
+                tl.load(chunk_indices + i_t * 2 + 1).to(i_t.dtype),
             )
         bos, eos = (
             tl.load(cu_seqlens + i_n).to(tl.int32),
@@ -201,7 +226,8 @@ def _kda_gate_cumsum_dot_kernel(
     TUNE_B: tl.constexpr,
     TUNE_N: tl.constexpr,
 ):
-    i_d, i_t, i_bh = tl.program_id(0), tl.program_id(1).to(tl.int64), tl.program_id(2)
+    i_d = tl.program_id(0)
+    i_t, i_bh = _program_coordinates(H, D, BT, TUNE_T, TUNE_NT, TUNE_B)
     i_b, i_h = i_bh // H, i_bh % H
     if IS_VARLEN:
         if AUTO_INDICES:
@@ -211,7 +237,7 @@ def _kda_gate_cumsum_dot_kernel(
         else:
             i_n, i_t = (
                 tl.load(chunk_indices + i_t * 2).to(tl.int32),
-                tl.load(chunk_indices + i_t * 2 + 1).to(tl.int64),
+                tl.load(chunk_indices + i_t * 2 + 1).to(i_t.dtype),
             )
         bos, eos = (
             tl.load(cu_seqlens + i_n).to(tl.int32),
