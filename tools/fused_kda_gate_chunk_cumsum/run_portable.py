@@ -64,6 +64,26 @@ def tuner_of(kernel):
     return kernel
 
 
+def recorded_launch(call, entry):
+    """Read the configuration actually launched, including LibEntry cache hits."""
+    original_run = entry.run
+    metadata = {}
+
+    def record(*args, **kwargs):
+        result = original_run(*args, **kwargs)
+        metadata.update(result[1])
+        return result
+
+    entry.run = record
+    try:
+        output = call()
+    finally:
+        entry.run = original_run
+    return output, {
+        name: metadata[name] for name in ("BD", "num_warps", "num_ctas", "num_stages")
+    }
+
+
 def capture(call, api, repeats):
     graph_type = next(
         getattr(api, name)
@@ -106,7 +126,7 @@ def main():
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--rounds", type=int, default=5)
-    parser.add_argument("--repeats", type=int, default=64)
+    parser.add_argument("--repeats", type=int, default=256)
     parser.add_argument(
         "--candidate-bd-list", help="Explicit candidate-only tuning trial"
     )
@@ -174,6 +194,9 @@ def main():
         "method": "device Graph replay with device events",
         "unit": "us",
         "rounds": options.rounds,
+        "graph_repetitions": options.repeats,
+        "samples_per_latency": 7,
+        "graph_warmup_replays": 3,
         "baseline": "frozen GLM5Next Triton source, fresh original tuner per case",
         "source_sha256": dataset["cases"][0]["captured_contract"]["source_sha256"],
         "shape_values": "captured model dimensions, synthetic tensor values",
@@ -204,8 +227,6 @@ def main():
             "gems": lambda: candidate(*args, **kwargs),
         }
         expected = torch_reference(*args, **kwargs)
-        for call in calls.values():
-            assert_close(call(), expected)
         row = {"case": spec["case"], "correctness": "passed", "rounds": []}
         automatic = (
             kwargs.get("cu_seqlens") is not None and kwargs.get("chunk_indices") is None
@@ -219,9 +240,13 @@ def main():
         active_kernel = candidate_module._select_kernel(
             args[0].device, values["H"], chunks, batches, values["chunk"], automatic
         )
+        assert_close(calls["baseline"](), expected)
+        actual, launched_config = recorded_launch(calls["gems"], active_kernel)
+        assert_close(actual, expected)
+        del actual
         row["algorithm"] = "scan" if active_kernel is candidate_kernel else "dot"
         row["baseline_config"] = tuner_of(upstream_kernel).best_config.all_kwargs()
-        row["gems_config"] = tuner_of(active_kernel).best_config.all_kwargs()
+        row["gems_config"] = launched_config
         if not options.validate_only:
             graphs = {}
             for name, call in calls.items():

@@ -97,6 +97,10 @@ inputs and prebuilt packed indices, and measure device events per Graph replay.
 Each shape gets a fresh original baseline tuner to avoid an earlier shape
 choosing its configuration. Report median paired speedup per case, geometric
 mean and minimum across the fixed active set. Never exclude slow shapes.
+Each final Graph contains 256 calls, with three replay warmups and seven event
+samples per latency. Earlier 64-call trials are retained separately. Candidate
+configuration reporting records the actual LibEntry launch, including cache
+hits; reading the tuner's last best_config alone can describe a previous case.
 Acceptance follows workflow.md (no key shape below 0.9x); the handoff's 1.1x
 optimization goal is reported separately. No measured result is asserted here.
 
