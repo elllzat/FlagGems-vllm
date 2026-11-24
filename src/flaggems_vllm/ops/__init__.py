@@ -295,7 +295,6 @@ from flaggems_vllm.ops.vit_attention import (
 )
 
 __all__ = [
-    "fused_kda_gate_chunk_cumsum",
     "act_quant_triton",
     "add_rms_norm",
     "apply_bad_words",
@@ -367,6 +366,7 @@ __all__ = [
     "fused_indexer_q_rope_quant",
     "fused_indexer_weight_scale",
     "fused_inv_rope_fp8_quant",
+    "fused_kda_gate_chunk_cumsum",
     "fused_kimi_k3_mla_kv_concat",
     "fused_marlin_moe",
     "fused_matmul_reduce_scatter",

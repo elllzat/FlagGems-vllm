@@ -1034,6 +1034,17 @@ ops:
   - Quantization
   stages:
   - beta: '5.4'
+- id: fused_kda_gate_chunk_cumsum
+  description: KDA gate activation followed by chunk-local inclusive prefix sums in log2 space.
+  for:
+  - fused_kda_gate_chunk_cumsum
+  labels:
+  - fused
+  - vLLM
+  kind:
+  - NeuralNetwork
+  stages:
+  - alpha: "5.5"
 - id: fused_kimi_k3_mla_kv_concat
   description: 'Copy Kimi-K3 NoPE keys and broadcast the shared PE component into a
 
@@ -2652,15 +2663,3 @@ ops:
   - NeuralNetwork
   stages:
   - stable: '3.0'
-
-- id: fused_kda_gate_chunk_cumsum
-  description: KDA gate activation followed by chunk-local inclusive prefix sums in log2 space.
-  for:
-  - fused_kda_gate_chunk_cumsum
-  labels:
-  - fused
-  - vLLM
-  kind:
-  - NeuralNetwork
-  stages:
-  - alpha: "5.5"

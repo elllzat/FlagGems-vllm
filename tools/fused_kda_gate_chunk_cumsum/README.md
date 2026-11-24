@@ -51,6 +51,28 @@ nonfinite limitation documented in the handoff experimental scan.
 Production permits only Torch allocation and metadata/no-copy views, with no
 Torch compute fallback. Optional automatic-index processing remains on device.
 
+HCU and MetaX keep an additional Triton matrix-prefix kernel for short launches.
+This is a candidate implementation, not a change to the frozen baseline.
+The host selects the algorithm first; each path separately tunes BD/warps.
+The dispatch compares logical head/chunk groups to a conservative coverage
+estimate: CU count * maximum resident threads / (4 * minimum scan warps *
+warp size). The factor four is a calibrated 25% coverage heuristic, not a
+physical limit or proof of achieved occupancy. It uses actual device metadata
+instead of a model-specific T threshold. Measured properties are 80 CUs,
+2560 threads/CU and 64-thread waves on BW1000, and 104 CUs, 2048 threads/CU and
+64-thread waves on C550. With the configured two-warp minimum, the estimates
+are 400 and 416 full-head chunk groups. All 38 captured contracts are used to
+validate the crossover; neither slow cases nor baseline candidates are removed.
+Other backends keep the scan path. Automatic-index rectangular grids use the
+matrix path on HCU/MetaX for small chunks because idle programs would otherwise
+inflate that coverage estimate.
+
+Chunk=128 always uses scan. The original matrix prefix can exceed device
+shared-memory limits: C550 reports 81920 bytes required versus 65536 available.
+The full test checks our result against independent Torch math before marking
+only the original-reference comparison as expected-resource-failure. No such
+exception applies to the 38 actual contracts, which all use chunk=64.
+
 ## Frozen validation and measurement
 
 Base: upstream main `248d413c`. Operator, exports, metadata, NVIDIA tuning YAML,
@@ -82,3 +104,32 @@ optimization goal is reported separately. No measured result is asserted here.
 failures. It loads the actual runtime/utilities/operator from the same checkout,
 marks public-package integration unverified and deselects its integration test.
 It must not be reported as a full public-package pass.
+
+## Container environment notes
+
+- H800: `vllm_elzat`, `/workspace/FlagGems-vllm-chunk-cumsum`, image Python,
+  CUDA_VISIBLE_DEVICES=3 for the recorded runs.
+- BW1000: `vllm_elzat`, same repository path, `/flagos/bin/python`.
+  A login shell drops `/flagos/bin` from PATH, so prepend it before the DTK
+  environment setup. Set TRITON_HIP_CLANG_PATH as in the login document.
+- C550: `flagtree-dev-elzat`, same repository path,
+  `/opt/conda/envs/flagtree36/bin/python`. The default conda interpreter has
+  old Triton 3.0, which fails in the unchanged reference autotuner. The
+  existing flagtree36 environment supplies Triton 3.6. MACA CPU-to-device
+  conversion defaults to channels-last; the test factory explicitly calls
+  contiguous so both implementations receive the captured packed layout.
+- PPU: the login document's PAI DSW container and personal `/root/elzat/venv`,
+  repository `/root/elzat/FlagGems-vllm-chunk-cumsum`. Full-package import hits
+  an unrelated new w8a8 TLE dependency unavailable in the installed compiler.
+  The explicit isolated path is used and public-package integration remains
+  unverified.
+- MThreads: JumpServer currently returns no asset for 10.121.38.73; no run is
+  claimed for that platform. Other unlisted hardware has no new measurement.
+
+Two candidate-only BD=128 experiments are not the default production config.
+The first is invalid for assessing the expanded search because it reused the
+six-config persistent winner. The second resets the candidate cache identity
+and uses a dedicated cache directory: larger scan tiles help some large HCU
+cases but do not fix the short-launch regressions. The host algorithm split
+is therefore a separate subsequent change. The six baseline candidates and
+their original tuning key remain unchanged throughout.
