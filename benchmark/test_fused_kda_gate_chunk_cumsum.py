@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 FlagOS Contributors
-"""Synthetic inputs; pinned designated vLLM baseline, plus a Torch-chain view."""
+"""Captured dimensions, synthetic values, and the frozen designated vLLM baseline."""
 
 import pytest
 import torch
@@ -30,7 +30,17 @@ def test_fused_kda_gate_chunk_cumsum(safe):
     def inputs(spec, dtype, device):
         values = dict(spec["case"])
         values["lengths"] = tuple(values["lengths"])
-        args, kwargs = make_inputs(Case(**values), dtype=dtype, safe=safe)
+        args, kwargs = make_inputs(
+            Case(**values), dtype=dtype, bias=spec["bias"], safe=safe
+        )
+        kwargs.update(
+            beta=spec["beta"],
+            threshold=spec["threshold"],
+            lower_bound=spec["lower_bound"],
+        )
+        for name in ("cu_seqlens", "chunk_indices"):
+            if name in kwargs:
+                kwargs[name] = kwargs[name].to(getattr(torch, spec["index_dtype"]))
         yield (*args, kwargs)
 
     bench = GateCumsumBenchmark(

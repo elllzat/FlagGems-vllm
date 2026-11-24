@@ -86,8 +86,8 @@ replaced silently with another baseline or an eager timing method.
 Run all commands in the user's own vendor container after a Git pull:
 
 ```bash
-PYTHONPATH=src:tools python -m pytest -q tests/test_fused_kda_gate_chunk_cumsum.py --quick
-PYTHONPATH=src:tools python tools/fused_kda_gate_chunk_cumsum/run_portable.py --output /workspace/chunk-cumsum-results/performance.json
+PYTHONPATH=src:tools:${PYTHONPATH:-} python -m pytest -q tests/test_fused_kda_gate_chunk_cumsum.py --quick
+PYTHONPATH=src:tools:${PYTHONPATH:-} python tools/fused_kda_gate_chunk_cumsum/run_portable.py --output /workspace/chunk-cumsum-results/performance.json
 ```
 
 The runner checks candidate and reference against independent Torch math before
@@ -115,7 +115,8 @@ It must not be reported as a full public-package pass.
   CUDA_VISIBLE_DEVICES=3 for the recorded runs.
 - BW1000: `vllm_elzat`, same repository path, `/flagos/bin/python`.
   A login shell drops `/flagos/bin` from PATH, so prepend it before the DTK
-  environment setup. Set TRITON_HIP_CLANG_PATH as in the login document.
+  environment setup. Preserve the image's PYTHONPATH=/opt/flagtree when
+  prepending this checkout. Set TRITON_HIP_CLANG_PATH as in the login document.
 - C550: `flagtree-dev-elzat`, same repository path,
   `/opt/conda/envs/flagtree36/bin/python`. The default conda interpreter has
   old Triton 3.0, which fails in the unchanged reference autotuner. The
