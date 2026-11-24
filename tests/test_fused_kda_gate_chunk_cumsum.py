@@ -51,6 +51,7 @@ pytestmark = [
 ]
 
 
+@pytest.mark.fused_kda_gate_chunk_cumsum
 @pytest.mark.parametrize("case", CASES, ids=lambda case: case.name)
 @pytest.mark.parametrize("dtype", INPUT_DTYPES)
 @pytest.mark.parametrize(

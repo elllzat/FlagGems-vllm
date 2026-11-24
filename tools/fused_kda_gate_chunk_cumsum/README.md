@@ -7,7 +7,7 @@ This development branch imports the handoff from H800 container `vllm_nyp`,
 `q4/fused-kda-gate-chunk-cumsum` (base `601514f66857e33848acfc3dacfafef403cac675`).
 The handoff contains uncommitted production files and experimental
 `native_scan.py` / `native_scan_cg.py`; these two experimental sources are kept
-as received, and are not production dependencies.
+byte-for-byte as `.py.txt` snapshots, and are not production dependencies.
 
 `source.json` identifies the actual GLM5Next baseline, vLLM commit
 `373614f66dc8dc678faaf33223256f814238b7cb`, source SHA256
