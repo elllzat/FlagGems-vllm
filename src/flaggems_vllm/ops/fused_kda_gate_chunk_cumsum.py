@@ -491,7 +491,12 @@ def _select_kernel(
     the device thread capacity, counted in minimum-warp full-head chunk groups.
     This is a coverage heuristic, not an achieved-occupancy or capacity claim.
     """
-    if _wave64_scan_kernel is not None and safe_gate:
+    if (
+        _wave64_scan_kernel is not None
+        and safe_gate
+        and tokens is not None
+        and 0 < tokens <= chunk_size // 2
+    ):
         return _wave64_scan_kernel
     if runtime.device.vendor_name not in ("hygon", "metax") or chunk_size > 64:
         return kda_gate_cumsum_fwd_kernel
