@@ -616,6 +616,13 @@ def fused_kda_gate_chunk_cumsum(
                 raise ValueError("Nonempty packed input requires chunk indices")
     if grid_batches * H > 65535:
         raise NotImplementedError("Sequence/batch times H exceeds the grid z limit")
+    if (
+        runtime.device.vendor_name in ("hygon", "metax")
+        and NT * grid_batches * H >= 2**31
+    ):
+        # The head-first program permutation uses a signed 32-bit linear ID.
+        # Automatic-index grids include idle sequence/chunk combinations.
+        raise NotImplementedError("Head/chunk grid exceeds the 32-bit program limit")
 
     y = torch.empty_like(raw_g, dtype=dtype)
     if raw_g.numel() == 0:

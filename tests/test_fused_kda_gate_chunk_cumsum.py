@@ -164,6 +164,22 @@ def test_short_physical_tile_preserves_logical_padding(tokens, safe):
     assert_close(port(*args, **kwargs), upstream(*args, **kwargs))
 
 
+@pytest.mark.skipif(
+    flaggems_vllm.vendor_name not in ("hygon", "metax"),
+    reason="Head-first scheduling is used by HCU and MACA",
+)
+def test_excessive_rectangular_grid_is_rejected_before_launch():
+    # Allocate under 10 MiB; no tensor contents are read. A rectangular grid
+    # with this metadata would otherwise launch over four billion programs.
+    g = torch.empty(
+        (1, 65535 * 64, 1, 1), device=flaggems_vllm.device, dtype=torch.bfloat16
+    )
+    a = torch.empty(1, device=flaggems_vllm.device)
+    boundaries = torch.empty(65536, device=flaggems_vllm.device, dtype=torch.int32)
+    with pytest.raises(NotImplementedError, match="32-bit program limit"):
+        port(g, a, cu_seqlens=boundaries)
+
+
 @pytest.mark.parametrize("shape", [(0, 65, 4, 128), (1, 0, 4, 128)])
 def test_empty(shape):
     g = torch.empty(shape, device=flaggems_vllm.device, dtype=torch.bfloat16)
