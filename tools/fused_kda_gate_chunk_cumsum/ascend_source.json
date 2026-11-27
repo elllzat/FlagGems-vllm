@@ -1,0 +1,60 @@
+{
+  "date": "2026-11-27",
+  "operator": "fused_kda_gate_chunk_cumsum",
+  "selection": "User selected the vLLM-Ascend native AscendC reference identified in the handoff document.",
+  "handoff_document": "交接文档.md, section 910b4; official PR https://github.com/vllm-project/vllm-ascend/pull/17998",
+  "repository": "https://github.com/vllm-project/vllm-ascend",
+  "commit": "4f869f9a8d3257e243fdd8fd9d998231f069ffe8",
+  "public_entry": "torch.ops._C_ascend.kda_gate_cumsum_vllm",
+  "sources": [
+    {
+      "path": "csrc/attention/kda_gate_cumsum_vllm/kda_gate_cumsum_vllm_torch_adpt.h",
+      "git_blob_sha": "fcd1b81695b754d234879f5f611a7405b3261186",
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/4f869f9a8d3257e243fdd8fd9d998231f069ffe8/csrc/attention/kda_gate_cumsum_vllm/kda_gate_cumsum_vllm_torch_adpt.h"
+    },
+    {
+      "path": "csrc/attention/kda_gate_cumsum_vllm/op_kernel/kda_gate_cumsum_vllm.cpp",
+      "git_blob_sha": "d0597b02ec501a0f79482846a788e7741e7294ad",
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/4f869f9a8d3257e243fdd8fd9d998231f069ffe8/csrc/attention/kda_gate_cumsum_vllm/op_kernel/kda_gate_cumsum_vllm.cpp"
+    },
+    {
+      "path": "csrc/attention/kda_gate_cumsum_vllm/op_kernel/kda_gate_cumsum_vllm_kernel.h",
+      "git_blob_sha": "de657bb767bdf2675b5a7d2159389d6792dda87d",
+      "url": "https://github.com/vllm-project/vllm-ascend/blob/4f869f9a8d3257e243fdd8fd9d998231f069ffe8/csrc/attention/kda_gate_cumsum_vllm/op_kernel/kda_gate_cumsum_vllm_kernel.h"
+    }
+  ],
+  "contract": {
+    "input": "contiguous [B,T,H,D], layout=BSND",
+    "A_log": "FP32 [H]; prepare the no-copy flattening of [1,1,H,1] before capture",
+    "dt_bias": "optional FP32 [H*D]",
+    "cu_seqlens": "host integer tuple or None; prepare from captured lengths before timing, never call device tolist inside capture",
+    "output": "same [B,T,H,D] shape, FP32",
+    "use_gate_in_kernel": true,
+    "safe_gate": true,
+    "lower_bound": -5,
+    "chunk_size": 64,
+    "semantics": "bounded sigmoid gate -> inclusive token prefix sum reset per sequence/chunk -> 1/ln(2) scaling",
+    "supported_raw_gate_scope": "The inspected public adapter requires safe_gate=True, lower_bound in [-5,0), D<=256, and chunk size 32/64/128; variable-length rank4 requires B=1."
+  },
+  "active_set": "All 38 existing captured_shapes.json contracts, BF16 input, FP32 output, safe gate, chunk64, H=32,D=128; no substitution of the previous standalone softplus workload.",
+  "measurement_policy": "Paired device Graph replay on the same NPU/container, identical logical inputs and sequence boundaries; compile/warmup and host metadata preparation outside capture. No new latency result recorded by this selection manifest.",
+  "runtime_preflight": {
+    "date": "2026-11-27",
+    "asset": "10.0.0.13",
+    "container": "flagtree-dev-elzat",
+    "python": "/usr/local/python3.11.13/bin/python3",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "npu_available": true,
+    "npu_graph_api_available": true,
+    "vllm_ascend_installed_in_probed_environment": false,
+    "selected_op_registered": false,
+    "status": "selected reference identified, not runtime-ready in the probed environment",
+    "action_required_before_measurement": "Provide/build the pinned vLLM-Ascend native extension in the personal container and verify binary/source provenance. Do not substitute another kernel when this operator is absent."
+  },
+  "limitations": [
+    "No binary provenance is inferred from an operator name alone. Check the installed extension/source revision before reporting measurements as this pinned reference.",
+    "The current portable GPU operator explicitly excludes Ascend. Selecting this reference does not constitute a completed Ascend implementation.",
+    "The previous standalone fused_kda_gate safe_gate=False baseline and the separate FLA-NPU npu_kda_gate_cumsum are not selected for this comparison."
+  ]
+}

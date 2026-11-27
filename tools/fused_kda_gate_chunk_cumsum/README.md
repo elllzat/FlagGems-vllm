@@ -75,6 +75,37 @@ The full test checks our result against independent Torch math before marking
 only the original-reference comparison as expected-resource-failure. No such
 exception applies to the 38 actual contracts, which all use chunk=64.
 
+## Selected Ascend reference, 2026-11-27
+
+For the future Ascend implementation, the selected reference is the handoff's
+native vLLM-Ascend AscendC `torch.ops._C_ascend.kda_gate_cumsum_vllm`, pinned to
+`4f869f9a8d3257e243fdd8fd9d998231f069ffe8`. Source paths and Git blob identities
+are recorded in [`ascend_source.json`](ascend_source.json). The installed
+extension's provenance must be checked before claiming measurements against
+that exact revision; the operator name alone does not identify a binary build.
+
+Use the existing 38 captured safe-gate contracts, not the old standalone
+softplus workload. Both sides must compute the gate, chunk-local inclusive
+cumsum and 1/ln(2) scaling. The reference accepts our token-major input as
+`layout="BSND"` and returns FP32 in the same shape. A_log is flattened to [H]
+before capture, and sequence boundaries are supplied as a prebuilt host tuple.
+No device-to-host metadata conversion belongs in the captured/timed call.
+
+```python
+output = torch.ops._C_ascend.kda_gate_cumsum_vllm(
+    g, 64, A_log=A_log_flat, dt_bias=g_bias,
+    cu_seqlens=cu_seqlens_host, use_gate_in_kernel=True,
+    safe_gate=True, lower_bound=-5.0, layout="BSND",
+)
+```
+
+This selects the baseline only. The portable production implementation above
+still excludes Ascend, and no new Ascend performance result is claimed here.
+The 2026-11-27 preflight ran inside the personal `flagtree-dev-elzat` container
+on 910B4: NPU and NPUGraph are available, but the probed Python environment has
+no vLLM-Ascend package and does not register the selected operator. Its native
+extension and binary provenance must therefore be prepared before benchmarking.
+
 ## Frozen validation and measurement
 
 Base: upstream main `248d413c`. Operator, exports, metadata, NVIDIA tuning YAML,
