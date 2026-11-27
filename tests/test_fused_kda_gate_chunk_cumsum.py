@@ -45,8 +45,8 @@ INPUT_DTYPES = (
 pytestmark = [
     pytest.mark.fused_kda_gate_chunk_cumsum,
     pytest.mark.skipif(
-        flaggems_vllm.device == "cpu" or flaggems_vllm.vendor_name == "ascend",
-        reason="The portable gate+cumsum path excludes CPU and Ascend",
+        flaggems_vllm.device == "cpu",
+        reason="The gate+cumsum operator requires an accelerator",
     ),
 ]
 

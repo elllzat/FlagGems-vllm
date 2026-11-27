@@ -37,6 +37,13 @@ def load_operator(isolated=False):
     ops.__path__ = [str(source / "ops")]
     sys.modules[ops.__name__] = ops
     module = importlib.import_module("flaggems_vllm.ops.fused_kda_gate_chunk_cumsum")
+    if runtime.device.vendor_name == "ascend":
+        path = source / "runtime/backend/_ascend/ops/fused_kda_gate_chunk_cumsum.py"
+        name = "flaggems_vllm.ops._ascend_fused_kda_gate_chunk_cumsum"
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
     package.runtime = runtime
     package.ops = ops
     package.device = runtime.device.name
@@ -90,7 +97,7 @@ def recorded_launch(call, entry):
 def capture(call, api, repeats, retain_previous=False):
     graph_type = next(
         getattr(api, name)
-        for name in ("CUDAGraph", "MUSAGraph", "PPUGraph", "Graph")
+        for name in ("CUDAGraph", "MUSAGraph", "NPUGraph", "PPUGraph", "Graph")
         if hasattr(api, name)
     )
     for _ in range(5):

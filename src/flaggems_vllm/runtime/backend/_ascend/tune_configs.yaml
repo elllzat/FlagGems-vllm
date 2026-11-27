@@ -515,3 +515,17 @@ gumbel_sample_streaming_row:
       TILE_SIZE: 4096
     num_warps: 4
     num_stages: 1
+
+fused_kda_gate_chunk_cumsum_ascend_scan:
+  - META:
+      BD: 32
+    num_warps: 4
+    num_stages: 1
+  - META:
+      BD: 64
+    num_warps: 4
+    num_stages: 1
+  - META:
+      BD: 128
+    num_warps: 4
+    num_stages: 1
