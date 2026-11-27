@@ -48,7 +48,11 @@ def load_reference(source, install, build):
     build.mkdir(parents=True, exist_ok=True)
     library = load(
         name="kda_chunk_ascendc_reference",
-        sources=[str(Path(__file__).with_name("ascend_reference_binding.cpp"))],
+        sources=[
+            str(Path(__file__).with_name("ascend_reference_binding.cpp")),
+            str(source / "csrc/aclnn_torch_adapter/NPUBridge.cpp"),
+            str(source / "csrc/aclnn_torch_adapter/NPUStorageImpl.cpp"),
+        ],
         extra_include_paths=sorted(extra),
         extra_cflags=["-O2", "-std=c++17"],
         extra_ldflags=[

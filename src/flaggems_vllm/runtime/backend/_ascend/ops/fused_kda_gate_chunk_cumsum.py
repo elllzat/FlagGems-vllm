@@ -96,15 +96,16 @@ def _ascend_scan_kernel(
     HAS_BIAS: tl.constexpr,
     IS_VARLEN: tl.constexpr,
     AUTO_INDICES: tl.constexpr,
-    TUNE_T: tl.constexpr,
-    TUNE_NT: tl.constexpr,
-    TUNE_B: tl.constexpr,
-    TUNE_N: tl.constexpr,
+    TUNE_T,
+    TUNE_NT,
+    TUNE_B,
+    TUNE_N,
+    INT64_INDEX: tl.constexpr,
 ):
     BLOCK_T: tl.constexpr = ROWS
     i_d = tl.program_id(0)
     i_t, i_bh = tl.program_id(1), tl.program_id(2)
-    if (TUNE_T + BT) * H * D * TUNE_B >= 2**31:
+    if INT64_INDEX:
         i_t = i_t.to(tl.int64)
     i_b, i_h = i_bh // H, i_bh % H
     if IS_VARLEN:
@@ -325,9 +326,10 @@ def fused_kda_gate_chunk_cumsum(
             D=D,
             BT=chunk_size,
             ROWS=min(chunk_size, triton.next_power_of_2(T)),
+            INT64_INDEX=(T + chunk_size) * H * D * B >= 2**31,
             AUTO_INDICES=auto_indices,
-            # Cache-only metadata: T is do_not_specialize, and LibEntry's hot
-            # launch bypasses the tuner. Both caches must distinguish workload.
+            # Ordinary scalar parameters keep exact values in LibEntry's key
+            # and in the tuner key, without one CANN binary per unused constant.
             # N separates equal packed shapes with different sequence splits.
             TUNE_T=T,
             TUNE_NT=NT,
