@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import statistics
 import subprocess
 import sys
@@ -89,6 +90,10 @@ def main():
         "shape_values": "all captured model dimensions, deterministic synthetic tensor values",
         "quick_subset": opts.quick,
         "torch": torch.__version__,
+        "device_name": api.get_device_name(api.current_device()),
+        "logical_device": api.current_device(),
+        "visible_devices": os.environ.get("ASCEND_RT_VISIBLE_DEVICES"),
+        "cann_home": os.environ.get("ASCEND_HOME_PATH"),
         "rows": [],
     }
     opts.output.parent.mkdir(parents=True, exist_ok=True)

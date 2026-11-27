@@ -9,6 +9,7 @@ import importlib
 import importlib.util
 import json
 import math
+import os
 import statistics
 import subprocess
 import sys
@@ -203,6 +204,16 @@ def main():
     report = {
         "vendor": library.vendor_name,
         "device": library.device,
+        "device_name": api.get_device_name(api.current_device()),
+        "visible_devices": {
+            name: os.environ[name]
+            for name in (
+                "CUDA_VISIBLE_DEVICES",
+                "MUSA_VISIBLE_DEVICES",
+                "ASCEND_RT_VISIBLE_DEVICES",
+            )
+            if name in os.environ
+        },
         "torch": torch.__version__,
         "revision": subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True

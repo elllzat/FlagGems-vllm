@@ -73,6 +73,14 @@ def load_reference(source, install, build):
         "binding_sha256": hashlib.sha256(library.read_bytes()).hexdigest(),
         "native_api": str(vendors[0]),
         "native_api_sha256": hashlib.sha256(vendors[0].read_bytes()).hexdigest(),
+        "kernel_artifacts": [
+            {
+                "path": str(p.relative_to(vendor)),
+                "sha256": hashlib.sha256(p.read_bytes()).hexdigest(),
+            }
+            for p in sorted((vendor / "op_impl/ai_core/tbe/kernel").rglob("*"))
+            if p.is_file()
+        ],
         "source_tree_unmodified": True,
         "build_scope": "Single native operator; unchanged upstream host adapter and ACLNN/kernel",
         "schema": str(torch.ops._C_ascend.kda_gate_cumsum_vllm.default._schema),

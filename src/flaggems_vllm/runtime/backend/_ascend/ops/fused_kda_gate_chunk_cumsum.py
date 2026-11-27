@@ -128,6 +128,8 @@ def _ascend_scan_kernel(
                 return
     else:
         bos = i_b * T
+    if INT64_INDEX:
+        bos = bos.to(tl.int64)
 
     o_t = i_t * BT + tl.arange(0, BLOCK_T)
     o_d = i_d * BD + tl.arange(0, BD)
