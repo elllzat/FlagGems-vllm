@@ -37,8 +37,39 @@
     "supported_raw_gate_scope": "The inspected public adapter requires safe_gate=True, lower_bound in [-5,0), D<=256, and chunk size 32/64/128; variable-length rank4 requires B=1."
   },
   "active_set": "All 38 existing captured_shapes.json contracts, BF16 input, FP32 output, safe gate, chunk64, H=32,D=128; no substitution of the previous standalone softplus workload.",
-  "measurement_policy": "Paired device Graph replay on the same NPU/container, identical logical inputs and sequence boundaries; compile/warmup and host metadata preparation outside capture. No new latency result recorded by this selection manifest.",
-  "runtime_preflight": {
+  "measurement_policy": "Five paired rounds of 256-call native NPU Graph replay on the same NPU/container. Compile, autotune and host metadata preparation are outside capture. Both outputs are checked against independent math before capture and after replay. Full results are recorded separately in validation.",
+  "limitations": [
+    "Binary provenance includes the pinned clean source, API/binding hashes and installed device-kernel artifact hashes in the validation report.",
+    "Ascend has a separate backend operator file. Full-package import in the current compiler environment is blocked by unrelated chunk_kda TLE dsa import incompatibility; isolated operator validation is labelled explicitly.",
+    "The native raw-gate reference requires safe_gate=True. Softplus production functionality is tested independently, not benchmarked against an unsupported native API mode.",
+    "AscendC scales each gate row before serial summation; the candidate preserves vLLM scaling after the scan. Floating-point order differs and both are checked with documented tolerances.",
+    "The previous standalone fused_kda_gate safe_gate=False baseline and separate FLA-NPU npu_kda_gate_cumsum are not used.",
+    "Native performance comparison uses finite synthetic values at all captured dimensions. Nonfinite production compatibility is tested against original vLLM triangular-dot behavior, not asserted equivalent to the vendor serial scan."
+  ],
+  "installed_reference": {
+    "date": "2026-11-27",
+    "asset": "10.0.0.13",
+    "container": "flagtree-dev-elzat",
+    "python": "/root/FlagGems/.venv/bin/python",
+    "torch": "2.10.0+cpu",
+    "torch_npu": "2.10.0",
+    "triton": "3.5.1",
+    "cann_home": "/usr/local/Ascend/cann-9.0.0",
+    "install_prefix": "/root/elzat/kda-chunk-20261127/ascendc-install",
+    "scope": "Only the selected native operator and its minimal registration binding; not the full vLLM-Ascend Python package.",
+    "upstream_build": "csrc/build.sh --pkg --ops=kda_gate_cumsum_vllm --soc=ascend910b -j4",
+    "native_api_sha256": "a0c1db661386db71dc6e71c633e061069d3229094c020d3ca6ea6d4ded840882",
+    "binding_sha256": "13b89fb75d3ee2081b0c23c469de05541656e281579e5eb63852eef6a1ba7b28",
+    "source_tree_unmodified": true,
+    "registration": "Original upstream schema and host adapter; no replacement computation.",
+    "hardware": {
+      "vector_cores": 40,
+      "aicore": 20,
+      "UB_bytes": 196608
+    },
+    "initial_preflight_note": "initial_runtime_preflight describes the initial default interpreter, not this installed test environment."
+  },
+  "initial_runtime_preflight": {
     "date": "2026-11-27",
     "asset": "10.0.0.13",
     "container": "flagtree-dev-elzat",
@@ -52,9 +83,16 @@
     "status": "selected reference identified, not runtime-ready in the probed environment",
     "action_required_before_measurement": "Provide/build the pinned vLLM-Ascend native extension in the personal container and verify binary/source provenance. Do not substitute another kernel when this operator is absent."
   },
-  "limitations": [
-    "No binary provenance is inferred from an operator name alone. Check the installed extension/source revision before reporting measurements as this pinned reference.",
-    "The current portable GPU operator explicitly excludes Ascend. Selecting this reference does not constitute a completed Ascend implementation.",
-    "The previous standalone fused_kda_gate safe_gate=False baseline and the separate FLA-NPU npu_kda_gate_cumsum are not selected for this comparison."
-  ]
+  "validation_result": {
+    "report": "validation/ascend_2026-11-27.json",
+    "captured_cases": 38,
+    "rounds": 5,
+    "graph_repetitions": 256,
+    "geomean_speedup": 10.401820443725699,
+    "min_speedup": 1.7347191649670228,
+    "functional_full": "214 passed, 1 skipped, 1 deselected",
+    "functional_added_int64": "3 passed",
+    "native_graph_benchmark_smoke": "1 passed, 1 deselected",
+    "public_package_import_verified": false
+  }
 }

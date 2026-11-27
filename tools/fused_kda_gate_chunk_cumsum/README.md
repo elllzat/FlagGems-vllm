@@ -41,8 +41,10 @@ Metadata values are the caller's responsibility, with no host readback.
 Dense and indexed packed inputs use the handoff grid. Packed inputs without
 indices use a rectangular device grid, skipping excess programs, avoiding the
 upstream Torch-based index-building helper. Empty inputs return without launch.
-CPU and Ascend are explicitly excluded from this implementation. Other vendors
-use the active runtime device and backend-neutral Triton operations.
+CPU is unsupported. The generic GPU file excludes Ascend; Ascend has a
+separate implementation under `runtime/backend/_ascend/ops/`, selected by the
+standard backend export. Other vendors use the active runtime device and
+backend-neutral Triton operations.
 The original CUDA-only libdevice dependency is removed from production.
 
 The scan preserves the original dot's future NaN/Inf contamination by detecting
@@ -77,7 +79,7 @@ exception applies to the 38 actual contracts, which all use chunk=64.
 
 ## Selected Ascend reference, 2026-11-27
 
-For the future Ascend implementation, the selected reference is the handoff's
+For the separate Ascend implementation, the selected reference is the handoff's
 native vLLM-Ascend AscendC `torch.ops._C_ascend.kda_gate_cumsum_vllm`, pinned to
 `4f869f9a8d3257e243fdd8fd9d998231f069ffe8`. Source paths and Git blob identities
 are recorded in [`ascend_source.json`](ascend_source.json). The installed
@@ -99,12 +101,74 @@ output = torch.ops._C_ascend.kda_gate_cumsum_vllm(
 )
 ```
 
-This selects the baseline only. The portable production implementation above
-still excludes Ascend, and no new Ascend performance result is claimed here.
-The 2026-11-27 preflight ran inside the personal `flagtree-dev-elzat` container
-on 910B4: NPU and NPUGraph are available, but the probed Python environment has
-no vLLM-Ascend package and does not register the selected operator. Its native
-extension and binary provenance must therefore be prepared before benchmarking.
+The selected native operator was built and installed in the personal
+`flagtree-dev-elzat` container, using its unchanged upstream build script,
+host adapter, ACLNN implementation and kernel. Installation is confined to
+`/root/elzat/kda-chunk-20261127/ascendc-install`; the full vLLM-Ascend Python
+package is not installed. `ascend_reference_binding.cpp` only registers the
+original schema and adapter. `ascend_reference.py` verifies the source commit,
+clean tracked source and source blobs, and records binding/API/device-kernel
+artifact hashes. It refuses an existing unverified registration.
+
+The correct test interpreter is `/root/FlagGems/.venv/bin/python` (Torch 2.10,
+torch_npu 2.10, Triton 3.5.1), with CANN 9. The initial manifest preflight used
+the image's other interpreter; it is retained as historical setup evidence.
+Native-extension installation and all compilation/testing occur inside the
+personal container, with no changes to global CANN or shared compiler packages.
+
+The Ascend implementation uses FP32 vector scan, independently scheduled
+head/channel/chunk tiles, short physical row tiles, bounded index widths and
+full-tile unmasked I/O. BD=32/64/128 candidates use one pipeline stage and
+launch-local `multibuffer=False`. On the queried 910B4, UB is 192 KiB and
+there are 40 vector cores. At chunk64 one FP32 tile occupies 8/16/32 KiB;
+this is one live array, not the complete UB footprint or an occupancy proof.
+Native NPU Graph timing selects among these three candidates.
+
+The pinned AscendC kernel performs scaling before each serial accumulation;
+our implementation retains vLLM's scaling after the scan. They implement the
+same real-number formula but have different floating-point summation orders.
+Both are checked against independent Torch math with the recorded tolerance,
+before capture and after replay. This is a comparison of the entire fused
+operation; it does not isolate or compare only the gate portion.
+Native performance inputs are deterministic finite-valued safe-gate tensors.
+Nonfinite compatibility tests target the pinned vLLM triangular-dot semantics;
+they do not assert identical NaN propagation from the vendor's serial scan.
+
+### Ascend validation, 2026-11-27
+
+[`validation/ascend_2026-11-27.json`](validation/ascend_2026-11-27.json)
+records all 38 cases, five paired rounds and 256 calls per native NPU Graph
+on physical device 6. The geometric-mean speedup against the selected native
+AscendC fused operation is **10.402x**, with a **1.735x minimum**; all 38 cases
+exceed 1.1x. At T=4096 the reference measures 5276.940 us and the candidate
+257.502 us, with a median paired speedup of 20.493x. These results are not
+comparable to an old standalone gate benchmark or a different vendor baseline.
+
+All 38 cases select BD=128 among the three candidates; this does not fix BD
+for other dimensions/dtypes. Full functional validation reports **214 passed,
+1 skipped, 1 deselected**, followed by **3 passed** for the added forced-int64
+branches. The full run imported the earlier 32-bit-equivalent snapshot
+`30b3c73`; subsequent index fixes only affect the int64 branch and are covered
+by the three targeted tests. Final performance at `5cab698` checks every active
+case against independent math before capture and after replay. The standard
+native-Graph benchmark smoke also passes (one safe-gate test covering all 38
+contracts; the unsupported native softplus comparison is deselected).
+
+Public-package import is **not verified** in this environment: unrelated
+`_ascend/FLA/chunk_kda.py` expects `triton.experimental.tle.dsa`, which the
+installed compiler lacks. The explicitly labelled isolated loader imports the
+actual checked-out runtime, utilities and separate Ascend operator. No shared
+compiler or unrelated production operator is patched to hide this limitation.
+The one functional skip is the HCU/MetaX-only oversized-grid guard; the public
+package integration check is the deselected case. The earlier five-case probe
+on physical device 3 is diagnostic only and excluded from the final aggregate.
+
+The high speedup is specific to this pinned native implementation. Its packed
+path assigns sequence/head tasks and loops over chunks/tokens with repeated
+scalar reads and synchronization. The candidate exposes independent chunk/
+channel tiles and uses vector scan; this is not an ablation assigning a measured
+gain to each individual optimization. The native resolver destinations and all
+eight installed device-kernel artifact hashes are retained in the report.
 
 ## Frozen validation and measurement
 
@@ -200,6 +264,37 @@ compiler-package limitation, not a hardware statement. No shared compiler
 package is patched. NVIDIA/PPU retain their standard scan route and tuning
 family; Gluon decoration and the new vendor-only configuration entries are
 not used on those backends.
+
+Detailed purposes, implementation locations, hardware reasoning, retained
+handoff ideas and measurement-only changes are explained in
+[`optimization_notes_zh.md`](optimization_notes_zh.md).
+
+## MThreads validation, 2026-11-27
+
+[`validation/mthreads_2026-11-27.json`](validation/mthreads_2026-11-27.json)
+records the complete public-operator five-round MUSA Graph matrix on S5000.
+All 38 cases remain, with 256 calls per graph and device-event timing.
+The geometric-mean speedup is **2.346x**, with a **1.017x minimum**.
+T=4096 measures 545.076 us for the original vLLM Triton reference and
+183.767 us for the candidate, with a median paired speedup of 2.974x.
+Each case is validated against independent math before capture and after replay.
+Final public-package functional validation reports **215 passed, 4 skipped**:
+one HCU/MetaX grid guard and three Ascend-only forced-index-width cases do not
+apply to MThreads. The repository's native-Graph benchmark smoke also passes.
+37/38 actual cases reach 1.1x; the remaining T=63 case reaches 1.017x.
+
+The initial T=63 trial selected BD32/2-warps and measured 0.889x. It is retained
+as a failed trial, not included in the final aggregate. Direct fixed-config
+checks found the 8-warp scan faster than the selected 2-warp scan for this
+workload. The candidate tuner now uses the same 256-call graph length as
+acceptance, ten replay warmups and seven device-event samples. A new
+task-local configuration cache forces retuning without altering shared caches.
+The final T=63 result is 1.017x. No kernel formula, baseline candidate, captured
+shape or global compiler setting was changed to obtain this result.
+
+This identifies a configuration-selection problem, not a proven hardware
+clock/cache cause. The fixed-config diagnostic uses a preallocated output
+and is not a replacement for the public-operator acceptance measurement.
 
 `probe_graph_pool.py` is a separate allocation-address diagnostic. It uses
 unchanged public operators and their normal tuners, records output addresses,
@@ -298,8 +393,16 @@ five-round paired runner, not a mixture of benchmark methods.
   an unrelated new w8a8 TLE dependency unavailable in the installed compiler.
   The explicit isolated path is used and public-package integration remains
   unverified.
-- MThreads: JumpServer currently returns no asset for 10.121.38.73; no run is
-  claimed for that platform. Other unlisted hardware has no new measurement.
+- MThreads: the old 10.121.38.73 asset is no longer listed. The verified new
+  S5000 asset is `worker33026` / 10.124.33.26. The personal `vllm_elzat`
+  container uses the MUSA 5.3 runtime image, `/flagos/bin/python3`,
+  Torch/torch_musa 2.13.0.post1+musa20261110 and FlagTree 0.7.0+mthreads3.6.
+  Repository: `/workspace/FlagGems-vllm-chunk-cumsum`; physical GPU 6 is used
+  for recorded runs. Public-package export is verified. The scan tuner uses
+  native MUSA Graphs; no global CUDA API alias is installed. The six candidate
+  configurations and GPU kernel mathematics remain unchanged in this follow-up.
+  The original frozen vLLM Triton reference is compiled on MUSA; this does not
+  claim comparison with a separate MThreads-native vendor implementation.
 
 Two initial candidate-only BD=128 experiments were not the default config.
 The first is invalid for assessing the expanded search because it reused the

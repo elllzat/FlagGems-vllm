@@ -1,0 +1,2377 @@
+{
+  "native_installation": {
+    "commit": "4f869f9a8d3257e243fdd8fd9d998231f069ffe8",
+    "binding": "/root/elzat/kda-chunk-20261127/binding-build/kda_chunk_ascendc_reference.so",
+    "binding_sha256": "13b89fb75d3ee2081b0c23c469de05541656e281579e5eb63852eef6a1ba7b28",
+    "native_api": "/root/elzat/kda-chunk-20261127/ascendc-install/vendors/custom_transformer/op_api/lib/libcust_opapi.so",
+    "native_api_sha256": "a0c1db661386db71dc6e71c633e061069d3229094c020d3ca6ea6d4ded840882",
+    "resolved_entrypoints": [
+      {
+        "symbol": "aclnnKdaGateCumsumVllm",
+        "library": "/root/elzat/kda-chunk-20261127/ascendc-install/vendors/custom_transformer/op_api/lib/libcust_opapi.so"
+      },
+      {
+        "symbol": "aclnnKdaGateCumsumVllmGetWorkspaceSize",
+        "library": "/root/elzat/kda-chunk-20261127/ascendc-install/vendors/custom_transformer/op_api/lib/libcust_opapi.so"
+      }
+    ],
+    "kernel_artifacts": [
+      {
+        "path": "op_impl/ai_core/tbe/kernel/ascend910b/kda_gate_cumsum_vllm/KdaGateCumsumVllm_09a9086833ffa6cc8470ed5f74bf586b.json",
+        "sha256": "3130acde144ae5bdb264a4f84bc8b58dedee42903b2a3dcc7c6d5b5b122421aa"
+      },
+      {
+        "path": "op_impl/ai_core/tbe/kernel/ascend910b/kda_gate_cumsum_vllm/KdaGateCumsumVllm_09a9086833ffa6cc8470ed5f74bf586b.o",
+        "sha256": "45eb47b6858e63360564b10a7b722cbb09c5b5dc2e2da58e955279ce19e44ac2"
+      },
+      {
+        "path": "op_impl/ai_core/tbe/kernel/ascend910b/kda_gate_cumsum_vllm/KdaGateCumsumVllm_215f034414bbe915e9c011a218b2fca8.json",
+        "sha256": "122a21a0fbd13d308a22b7e8a29e87013b6de69c439c9cbb4481d89955cdb9d8"
+      },
+      {
+        "path": "op_impl/ai_core/tbe/kernel/ascend910b/kda_gate_cumsum_vllm/KdaGateCumsumVllm_215f034414bbe915e9c011a218b2fca8.o",
+        "sha256": "8d5373216b15fa15fbd6b6b3ce663518cf8f657813e27fd5547ba8e8c1afa5ce"
+      },
+      {
+        "path": "op_impl/ai_core/tbe/kernel/ascend910b/kda_gate_cumsum_vllm/KdaGateCumsumVllm_de6080af79bd90e44568bb9845569393.json",
+        "sha256": "29b393b442d252b087a4fd5290153f13b3326c45c810e166f8da4603745157c2"
+      },
+      {
+        "path": "op_impl/ai_core/tbe/kernel/ascend910b/kda_gate_cumsum_vllm/KdaGateCumsumVllm_de6080af79bd90e44568bb9845569393.o",
+        "sha256": "751bc5f41640cffde42ad6e69656c391f16e50b8aa0510274835b84109de820a"
+      },
+      {
+        "path": "op_impl/ai_core/tbe/kernel/config/ascend910b/binary_info_config.json",
+        "sha256": "ed028fc4b82b2380ac1c057a6896316f51fc6fa9ab44fb3a6a9a0459a1d04b66"
+      },
+      {
+        "path": "op_impl/ai_core/tbe/kernel/config/ascend910b/kda_gate_cumsum_vllm.json",
+        "sha256": "d6fb586638b5af62589c1a7ecdf16393672e145ea6f89f43a54685c286e83ae9"
+      }
+    ],
+    "source_tree_unmodified": true,
+    "build_scope": "Single native operator; unchanged upstream host adapter and ACLNN/kernel",
+    "schema": "_C_ascend::kda_gate_cumsum_vllm(Tensor g, int chunk_size, *, Tensor? A_log=None, Tensor? dt_bias=None, int[]? cu_seqlens=None, bool? use_gate_in_kernel=False, bool? safe_gate=False, float? lower_bound=-5., str layout=\"BSND\") -> Tensor"
+  },
+  "hardware": {
+    "AiCore": {
+      "SOC_VERSION": "Ascend910B4",
+      "CORE_NUM": 20,
+      "UB_SIZE": 196608
+    },
+    "VectorCore": {
+      "SOC_VERSION": "Ascend910B4",
+      "CORE_NUM": 40,
+      "UB_SIZE": 196608
+    }
+  },
+  "diagnostic_five_cases": {
+    "vendor": "ascend",
+    "revision": "04e0590a95e4d9458af51233da6d0f8f144680b1",
+    "candidate_file": "src/flaggems_vllm/runtime/backend/_ascend/ops/fused_kda_gate_chunk_cumsum.py",
+    "candidate_sha256": "318617da8a8184c8479db10ce80f1c3ef62f7905c782de93ecebbcc3e2c5bb33",
+    "baseline": {
+      "commit": "4f869f9a8d3257e243fdd8fd9d998231f069ffe8",
+      "binding": "/root/elzat/kda-chunk-20261127/binding-build/kda_chunk_ascendc_reference.so",
+      "binding_sha256": "13b89fb75d3ee2081b0c23c469de05541656e281579e5eb63852eef6a1ba7b28",
+      "native_api": "/root/elzat/kda-chunk-20261127/ascendc-install/vendors/custom_transformer/op_api/lib/libcust_opapi.so",
+      "native_api_sha256": "a0c1db661386db71dc6e71c633e061069d3229094c020d3ca6ea6d4ded840882",
+      "source_tree_unmodified": true,
+      "build_scope": "Single native operator; unchanged upstream host adapter and ACLNN/kernel",
+      "schema": "_C_ascend::kda_gate_cumsum_vllm(Tensor g, int chunk_size, *, Tensor? A_log=None, Tensor? dt_bias=None, int[]? cu_seqlens=None, bool? use_gate_in_kernel=False, bool? safe_gate=False, float? lower_bound=-5., str layout=\"BSND\") -> Tensor"
+    },
+    "method": "native NPU Graph replay with device events",
+    "unit": "us",
+    "rounds": 5,
+    "graph_repetitions": 256,
+    "samples_per_latency": 7,
+    "graph_warmup_replays": 3,
+    "capture_output_lifetime": "discard intermediates, retain final output for validation",
+    "public_package_import_verified": false,
+    "shape_values": "all captured model dimensions, deterministic synthetic tensor values",
+    "quick_subset": true,
+    "torch": "2.10.0+cpu",
+    "rows": [
+      {
+        "case": {
+          "name": "runtime_a8c7752a0a92",
+          "B": 1,
+          "T": 1,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            1
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 6.692499853670597,
+            "gems": 3.8082811515778303,
+            "speedup": 1.7573544565893697
+          },
+          {
+            "gems": 3.8076562341302633,
+            "baseline": 6.6914064809679985,
+            "speedup": 1.757355724760283
+          },
+          {
+            "baseline": 6.691953167319298,
+            "gems": 3.8071093149483204,
+            "speedup": 1.7577517779812262
+          },
+          {
+            "gems": 3.80734377540648,
+            "baseline": 6.692890543490648,
+            "speedup": 1.7578897358109202
+          },
+          {
+            "baseline": 6.6914064809679985,
+            "gems": 3.80734377540648,
+            "speedup": 1.757499946338208
+          }
+        ],
+        "baseline_us": 6.691953167319298,
+        "gems_us": 3.80734377540648,
+        "speedup": 1.757499946338208
+      },
+      {
+        "case": {
+          "name": "runtime_c8220a9db0ec",
+          "B": 1,
+          "T": 65,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            65
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 82.62960612773895,
+            "gems": 13.748125173151493,
+            "speedup": 6.010245403431813
+          },
+          {
+            "gems": 13.75375036150217,
+            "baseline": 82.65351504087448,
+            "speedup": 6.009525610718381
+          },
+          {
+            "baseline": 82.64187723398209,
+            "gems": 13.754765503108501,
+            "speedup": 6.008235997575202
+          },
+          {
+            "gems": 13.758281245827675,
+            "baseline": 82.63242244720459,
+            "speedup": 6.006013467144643
+          },
+          {
+            "baseline": 82.64289051294327,
+            "gems": 13.76281213015318,
+            "speedup": 6.0047968199667245
+          }
+        ],
+        "baseline_us": 82.64187723398209,
+        "gems_us": 13.754765503108501,
+        "speedup": 6.008235997575202
+      },
+      {
+        "case": {
+          "name": "runtime_7136eb98f125",
+          "B": 1,
+          "T": 129,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            64,
+            65
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 158.4039032459259,
+            "gems": 18.895234912633896,
+            "speedup": 8.383272501153849
+          },
+          {
+            "gems": 18.897265195846558,
+            "baseline": 158.71398150920868,
+            "speedup": 8.398780451262997
+          },
+          {
+            "baseline": 158.75399112701416,
+            "gems": 18.924765288829803,
+            "speedup": 8.388690094915866
+          },
+          {
+            "gems": 18.91828142106533,
+            "baseline": 158.48539769649506,
+            "speedup": 8.377367593233021
+          },
+          {
+            "baseline": 158.48445892333984,
+            "gems": 18.904687836766243,
+            "speedup": 8.383341755853586
+          }
+        ],
+        "baseline_us": 158.48539769649506,
+        "gems_us": 18.904687836766243,
+        "speedup": 8.383341755853586
+      },
+      {
+        "case": {
+          "name": "runtime_2e37a8a061e2",
+          "B": 1,
+          "T": 129,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            129
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 139.538511633873,
+            "gems": 19.597187638282776,
+            "speedup": 7.12033349934798
+          },
+          {
+            "gems": 19.61921900510788,
+            "baseline": 139.54117894172668,
+            "speedup": 7.112473687428486
+          },
+          {
+            "baseline": 139.55390453338623,
+            "gems": 19.597657024860382,
+            "speedup": 7.120948405023965
+          },
+          {
+            "gems": 19.602656364440918,
+            "baseline": 139.56187665462494,
+            "speedup": 7.119539008386089
+          },
+          {
+            "baseline": 139.57905769348145,
+            "gems": 19.61085945367813,
+            "speedup": 7.117437051811749
+          }
+        ],
+        "baseline_us": 139.55390453338623,
+        "gems_us": 19.602656364440918,
+        "speedup": 7.119539008386089
+      },
+      {
+        "case": {
+          "name": "runtime_a0163de2177d",
+          "B": 1,
+          "T": 4096,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            4096
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 4959.54704284668,
+            "gems": 256.0400068759918,
+            "speedup": 19.37020352154866
+          },
+          {
+            "gems": 255.98758459091187,
+            "baseline": 4960.050106048584,
+            "speedup": 19.376135424595418
+          },
+          {
+            "baseline": 4959.996700286865,
+            "gems": 256.0156285762787,
+            "speedup": 19.37380435667058
+          },
+          {
+            "gems": 256.03407621383667,
+            "baseline": 4959.109306335449,
+            "speedup": 19.36894252386022
+          },
+          {
+            "baseline": 4959.033012390137,
+            "gems": 255.97155094146729,
+            "speedup": 19.373375651125045
+          }
+        ],
+        "baseline_us": 4959.54704284668,
+        "gems_us": 256.0156285762787,
+        "speedup": 19.373375651125045
+      }
+    ],
+    "geomean_speedup": 6.566641841122499,
+    "min_speedup": 1.757499946338208
+  },
+  "functional_quick": "...................................................................s.... [ 56%]\n.......................................................                  [100%]\n=============================== warnings summary ===============================\ntests/test_fused_kda_gate_chunk_cumsum.py::test_reference_and_upstream[False-False-dtype0-tail]\n  /root/elzat/FlagGems-vllm-chunk-cumsum/tools/fused_kda_gate_chunk_cumsum/reference.py:129: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)\n    y = torch.empty_like(gate)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n126 passed, 1 skipped, 1 deselected, 1 warning in 1037.23s (0:17:17)\n",
+  "functional_int64": {
+    "snapshot": "d6d43f2",
+    "exit_code": 0,
+    "log": "...                                                                      [100%]\n=============================== warnings summary ===============================\ntests/test_fused_kda_gate_chunk_cumsum.py::test_ascend_int64_index_branch[dense]\n  /root/elzat/FlagGems-vllm-chunk-cumsum/tests/test_fused_kda_gate_chunk_cumsum.py:284: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)\n    output = torch.empty_like(args[0], dtype=torch.float32)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n3 passed, 216 deselected, 1 warning in 50.11s\n"
+  },
+  "public_import_limitation": "[ERROR] 2026-11-27-15:20:48 (PID:2031928, Device:-1, RankID:-1) ERR99999 UNKNOWN applicaiton exception\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"/root/elzat/FlagGems-vllm-chunk-cumsum/src/flaggems_vllm/__init__.py\", line 24, in <module>\n    from flaggems_vllm.ops import *  # noqa: F401,F403\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/root/elzat/FlagGems-vllm-chunk-cumsum/src/flaggems_vllm/ops/__init__.py\", line 31, in <module>\n    from flaggems_vllm.ops.chunk_gated_delta_rule import chunk_gated_delta_rule\n  File \"/root/elzat/FlagGems-vllm-chunk-cumsum/src/flaggems_vllm/ops/chunk_gated_delta_rule.py\", line 21, in <module>\n    from flaggems_vllm.ops.FLA import chunk_gated_delta_rule_fwd\n  File \"/root/elzat/FlagGems-vllm-chunk-cumsum/src/flaggems_vllm/ops/FLA/__init__.py\", line 59, in <module>\n    from flaggems_vllm.runtime.backend._ascend.FLA import (  # noqa: F811\n  File \"/root/elzat/FlagGems-vllm-chunk-cumsum/src/flaggems_vllm/runtime/backend/_ascend/FLA/__init__.py\", line 15, in <module>\n    from flaggems_vllm.runtime.backend._ascend.FLA.chunk_kda import chunk_kda\n  File \"/root/elzat/FlagGems-vllm-chunk-cumsum/src/flaggems_vllm/runtime/backend/_ascend/FLA/chunk_kda.py\", line 74, in <module>\n    _extract_slice = tle.dsa.extract_slice\n                     ^^^^^^^\nAttributeError: module 'triton.experimental.tle' has no attribute 'dsa'\n",
+  "performance": {
+    "vendor": "ascend",
+    "revision": "5cab698c69496f9964527311ee593ced826b6c5c",
+    "candidate_file": "src/flaggems_vllm/runtime/backend/_ascend/ops/fused_kda_gate_chunk_cumsum.py",
+    "candidate_sha256": "55414dd697709b538d81ceaf54abb6976ec5d8b754388bc2d7a8f66de2bcc1b2",
+    "baseline": {
+      "commit": "4f869f9a8d3257e243fdd8fd9d998231f069ffe8",
+      "binding": "/root/elzat/kda-chunk-20261127/binding-build/kda_chunk_ascendc_reference.so",
+      "binding_sha256": "13b89fb75d3ee2081b0c23c469de05541656e281579e5eb63852eef6a1ba7b28",
+      "native_api": "/root/elzat/kda-chunk-20261127/ascendc-install/vendors/custom_transformer/op_api/lib/libcust_opapi.so",
+      "native_api_sha256": "a0c1db661386db71dc6e71c633e061069d3229094c020d3ca6ea6d4ded840882",
+      "resolved_entrypoints": [
+        {
+          "symbol": "aclnnKdaGateCumsumVllm",
+          "library": "/root/elzat/kda-chunk-20261127/ascendc-install/vendors/custom_transformer/op_api/lib/libcust_opapi.so"
+        },
+        {
+          "symbol": "aclnnKdaGateCumsumVllmGetWorkspaceSize",
+          "library": "/root/elzat/kda-chunk-20261127/ascendc-install/vendors/custom_transformer/op_api/lib/libcust_opapi.so"
+        }
+      ],
+      "kernel_artifacts": [
+        {
+          "path": "op_impl/ai_core/tbe/kernel/ascend910b/kda_gate_cumsum_vllm/KdaGateCumsumVllm_09a9086833ffa6cc8470ed5f74bf586b.json",
+          "sha256": "3130acde144ae5bdb264a4f84bc8b58dedee42903b2a3dcc7c6d5b5b122421aa"
+        },
+        {
+          "path": "op_impl/ai_core/tbe/kernel/ascend910b/kda_gate_cumsum_vllm/KdaGateCumsumVllm_09a9086833ffa6cc8470ed5f74bf586b.o",
+          "sha256": "45eb47b6858e63360564b10a7b722cbb09c5b5dc2e2da58e955279ce19e44ac2"
+        },
+        {
+          "path": "op_impl/ai_core/tbe/kernel/ascend910b/kda_gate_cumsum_vllm/KdaGateCumsumVllm_215f034414bbe915e9c011a218b2fca8.json",
+          "sha256": "122a21a0fbd13d308a22b7e8a29e87013b6de69c439c9cbb4481d89955cdb9d8"
+        },
+        {
+          "path": "op_impl/ai_core/tbe/kernel/ascend910b/kda_gate_cumsum_vllm/KdaGateCumsumVllm_215f034414bbe915e9c011a218b2fca8.o",
+          "sha256": "8d5373216b15fa15fbd6b6b3ce663518cf8f657813e27fd5547ba8e8c1afa5ce"
+        },
+        {
+          "path": "op_impl/ai_core/tbe/kernel/ascend910b/kda_gate_cumsum_vllm/KdaGateCumsumVllm_de6080af79bd90e44568bb9845569393.json",
+          "sha256": "29b393b442d252b087a4fd5290153f13b3326c45c810e166f8da4603745157c2"
+        },
+        {
+          "path": "op_impl/ai_core/tbe/kernel/ascend910b/kda_gate_cumsum_vllm/KdaGateCumsumVllm_de6080af79bd90e44568bb9845569393.o",
+          "sha256": "751bc5f41640cffde42ad6e69656c391f16e50b8aa0510274835b84109de820a"
+        },
+        {
+          "path": "op_impl/ai_core/tbe/kernel/config/ascend910b/binary_info_config.json",
+          "sha256": "ed028fc4b82b2380ac1c057a6896316f51fc6fa9ab44fb3a6a9a0459a1d04b66"
+        },
+        {
+          "path": "op_impl/ai_core/tbe/kernel/config/ascend910b/kda_gate_cumsum_vllm.json",
+          "sha256": "d6fb586638b5af62589c1a7ecdf16393672e145ea6f89f43a54685c286e83ae9"
+        }
+      ],
+      "source_tree_unmodified": true,
+      "build_scope": "Single native operator; unchanged upstream host adapter and ACLNN/kernel",
+      "schema": "_C_ascend::kda_gate_cumsum_vllm(Tensor g, int chunk_size, *, Tensor? A_log=None, Tensor? dt_bias=None, int[]? cu_seqlens=None, bool? use_gate_in_kernel=False, bool? safe_gate=False, float? lower_bound=-5., str layout=\"BSND\") -> Tensor"
+    },
+    "method": "native NPU Graph replay with device events",
+    "unit": "us",
+    "rounds": 5,
+    "graph_repetitions": 256,
+    "samples_per_latency": 7,
+    "graph_warmup_replays": 3,
+    "capture_output_lifetime": "discard intermediates, retain final output for validation",
+    "public_package_import_verified": false,
+    "shape_values": "all captured model dimensions, deterministic synthetic tensor values",
+    "quick_subset": false,
+    "torch": "2.10.0+cpu",
+    "device_name": "Ascend910B4-1",
+    "logical_device": 0,
+    "visible_devices": "6",
+    "cann_home": "/usr/local/Ascend/cann-9.0.0",
+    "rows": [
+      {
+        "case": {
+          "name": "runtime_a8c7752a0a92",
+          "B": 1,
+          "T": 1,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            1
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 6.656171754002571,
+            "gems": 3.837031312286854,
+            "speedup": 1.7347191649670228
+          },
+          {
+            "gems": 3.8373437710106373,
+            "baseline": 6.656249985098839,
+            "speedup": 1.734598300882954
+          },
+          {
+            "baseline": 6.656093522906303,
+            "gems": 3.836875082924962,
+            "speedup": 1.7347694097541921
+          },
+          {
+            "gems": 3.8382811471819878,
+            "baseline": 6.656562443822622,
+            "speedup": 1.7342560871836543
+          },
+          {
+            "baseline": 6.657343823462725,
+            "gems": 3.8375782314687967,
+            "speedup": 1.734777357467626
+          }
+        ],
+        "baseline_us": 6.656249985098839,
+        "gems_us": 3.8373437710106373,
+        "speedup": 1.7347191649670228
+      },
+      {
+        "case": {
+          "name": "runtime_af352f584d9a",
+          "B": 1,
+          "T": 2,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            2
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 8.068515919148922,
+            "gems": 4.066406283527613,
+            "speedup": 1.9841883364761757
+          },
+          {
+            "gems": 4.065937362611294,
+            "baseline": 8.068359456956387,
+            "speedup": 1.9843786899300857
+          },
+          {
+            "baseline": 8.069922216236591,
+            "gems": 4.066796973347664,
+            "speedup": 1.9843435187750904
+          },
+          {
+            "gems": 4.064999986439943,
+            "baseline": 8.069062605500221,
+            "speedup": 1.9850092576671732
+          },
+          {
+            "baseline": 8.067968301475048,
+            "gems": 4.064921755343676,
+            "speedup": 1.9847782533253038
+          }
+        ],
+        "baseline_us": 8.068515919148922,
+        "gems_us": 4.065937362611294,
+        "speedup": 1.9843786899300857
+      },
+      {
+        "case": {
+          "name": "runtime_4ee0fa444880",
+          "B": 1,
+          "T": 4,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            4
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 10.71031205356121,
+            "gems": 4.239921923726797,
+            "speedup": 2.526063509241954
+          },
+          {
+            "gems": 4.239843692630529,
+            "baseline": 10.70789061486721,
+            "speedup": 2.525539003590886
+          },
+          {
+            "baseline": 10.709531605243683,
+            "gems": 4.239843692630529,
+            "speedup": 2.5259260438912925
+          },
+          {
+            "gems": 4.239062312990427,
+            "baseline": 10.708671994507313,
+            "speedup": 2.5261888606098193
+          },
+          {
+            "baseline": 10.71031205356121,
+            "gems": 4.239453002810478,
+            "speedup": 2.526342914159204
+          }
+        ],
+        "baseline_us": 10.709531605243683,
+        "gems_us": 4.239843692630529,
+        "speedup": 2.526063509241954
+      },
+      {
+        "case": {
+          "name": "runtime_7aaf0bb477a8",
+          "B": 1,
+          "T": 63,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            63
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 76.98164135217667,
+            "gems": 7.533984258770943,
+            "speedup": 10.217919059567437
+          },
+          {
+            "gems": 7.530468981713057,
+            "baseline": 76.9699215888977,
+            "speedup": 10.221132545105887
+          },
+          {
+            "baseline": 76.98367536067963,
+            "gems": 7.524218875914812,
+            "speedup": 10.231450816390527
+          },
+          {
+            "gems": 7.533750031143427,
+            "baseline": 76.97359472513199,
+            "speedup": 10.217168661945824
+          },
+          {
+            "baseline": 76.98015868663788,
+            "gems": 7.528047077357769,
+            "speedup": 10.225780723153601
+          }
+        ],
+        "baseline_us": 76.98015868663788,
+        "gems_us": 7.530468981713057,
+        "speedup": 10.221132545105887
+      },
+      {
+        "case": {
+          "name": "runtime_8c6f61ee75f3",
+          "B": 1,
+          "T": 64,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            64
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 87.92078495025635,
+            "gems": 7.4614062905311584,
+            "speedup": 11.783406710050297
+          },
+          {
+            "gems": 7.4614062905311584,
+            "baseline": 87.91039139032364,
+            "speedup": 11.782013734044433
+          },
+          {
+            "baseline": 87.91312575340271,
+            "gems": 7.4588279239833355,
+            "speedup": 11.786453133035051
+          },
+          {
+            "gems": 7.469531148672104,
+            "baseline": 87.92047202587128,
+            "speedup": 11.7705476121485
+          },
+          {
+            "baseline": 87.91335672140121,
+            "gems": 7.4461717158555984,
+            "speedup": 11.806517506734611
+          }
+        ],
+        "baseline_us": 87.91335672140121,
+        "gems_us": 7.4614062905311584,
+        "speedup": 11.783406710050297
+      },
+      {
+        "case": {
+          "name": "runtime_c8220a9db0ec",
+          "B": 1,
+          "T": 65,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            65
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 79.14179563522339,
+            "gems": 13.334140181541443,
+            "speedup": 5.935275507661155
+          },
+          {
+            "gems": 13.331172056496143,
+            "baseline": 79.14640754461288,
+            "speedup": 5.93694291913708
+          },
+          {
+            "baseline": 79.05593514442444,
+            "gems": 13.323905877768993,
+            "speedup": 5.933390393903164
+          },
+          {
+            "gems": 13.333125039935112,
+            "baseline": 79.12976294755936,
+            "speedup": 5.934824934930968
+          },
+          {
+            "baseline": 79.12242412567139,
+            "gems": 13.333359733223915,
+            "speedup": 5.934170059817333
+          }
+        ],
+        "baseline_us": 79.12976294755936,
+        "gems_us": 13.333125039935112,
+        "speedup": 5.934824934930968
+      },
+      {
+        "case": {
+          "name": "runtime_2fa3bd15d4b3",
+          "B": 1,
+          "T": 67,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            67
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 72.73469120264053,
+            "gems": 13.310312293469906,
+            "speedup": 5.464536789142391
+          },
+          {
+            "gems": 13.314219191670418,
+            "baseline": 72.74015992879868,
+            "speedup": 5.463344029539941
+          },
+          {
+            "baseline": 72.74343818426132,
+            "gems": 13.316250406205654,
+            "speedup": 5.46275685461437
+          },
+          {
+            "gems": 13.31414096057415,
+            "baseline": 72.74304330348969,
+            "speedup": 5.4635926958334355
+          },
+          {
+            "baseline": 72.73437827825546,
+            "gems": 13.312578201293945,
+            "speedup": 5.463583175134767
+          }
+        ],
+        "baseline_us": 72.74015992879868,
+        "gems_us": 13.31414096057415,
+        "speedup": 5.463583175134767
+      },
+      {
+        "case": {
+          "name": "runtime_3404fd0f0046",
+          "B": 1,
+          "T": 127,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            127
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 159.58702564239502,
+            "gems": 13.722890987992287,
+            "speedup": 11.629256967940341
+          },
+          {
+            "gems": 13.725155964493752,
+            "baseline": 159.5662534236908,
+            "speedup": 11.62582442315994
+          },
+          {
+            "baseline": 159.55016016960144,
+            "gems": 13.71671911329031,
+            "speedup": 11.63180195291826
+          },
+          {
+            "gems": 13.720078393816948,
+            "baseline": 159.5660150051117,
+            "speedup": 11.630109568252998
+          },
+          {
+            "baseline": 159.5548391342163,
+            "gems": 13.727265410125256,
+            "speedup": 11.623206397432105
+          }
+        ],
+        "baseline_us": 159.5660150051117,
+        "gems_us": 13.722890987992287,
+        "speedup": 11.629256967940341
+      },
+      {
+        "case": {
+          "name": "runtime_731f5f5f93d0",
+          "B": 1,
+          "T": 128,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            128
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 138.02210986614227,
+            "gems": 13.62289022654295,
+            "speedup": 10.131631949673856
+          },
+          {
+            "gems": 13.6296097189188,
+            "baseline": 138.03476095199585,
+            "speedup": 10.127565190688804
+          },
+          {
+            "baseline": 138.02562654018402,
+            "gems": 13.633905909955502,
+            "speedup": 10.123703907872613
+          },
+          {
+            "gems": 13.631484471261501,
+            "baseline": 138.0331963300705,
+            "speedup": 10.126057556026138
+          },
+          {
+            "baseline": 138.06460797786713,
+            "gems": 13.62703088670969,
+            "speedup": 10.131672051357878
+          }
+        ],
+        "baseline_us": 138.0331963300705,
+        "gems_us": 13.6296097189188,
+        "speedup": 10.127565190688804
+      },
+      {
+        "case": {
+          "name": "runtime_7136eb98f125",
+          "B": 1,
+          "T": 129,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            64,
+            65
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 152.89758145809174,
+            "gems": 18.974531441926956,
+            "speedup": 8.058042535914353
+          },
+          {
+            "gems": 18.9813282340765,
+            "baseline": 152.72405743598938,
+            "speedup": 8.046015302649334
+          },
+          {
+            "baseline": 152.73188054561615,
+            "gems": 18.97335983812809,
+            "speedup": 8.049806773742434
+          },
+          {
+            "gems": 18.967969343066216,
+            "baseline": 152.66843140125275,
+            "speedup": 8.048749375328416
+          },
+          {
+            "baseline": 152.6992917060852,
+            "gems": 18.955936655402184,
+            "speedup": 8.055486493861435
+          }
+        ],
+        "baseline_us": 152.72405743598938,
+        "gems_us": 18.97335983812809,
+        "speedup": 8.049806773742434
+      },
+      {
+        "case": {
+          "name": "runtime_2e37a8a061e2",
+          "B": 1,
+          "T": 129,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            129
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 138.9012485742569,
+            "gems": 18.899843096733093,
+            "speedup": 7.349333423739718
+          },
+          {
+            "gems": 18.908437341451645,
+            "baseline": 139.03804123401642,
+            "speedup": 7.353227489043372
+          },
+          {
+            "baseline": 139.04140889644623,
+            "gems": 18.902968615293503,
+            "speedup": 7.355532970834769
+          },
+          {
+            "gems": 18.915312364697456,
+            "baseline": 138.9080435037613,
+            "speedup": 7.343682241431654
+          },
+          {
+            "baseline": 138.90695571899414,
+            "gems": 18.893124535679817,
+            "speedup": 7.352248986485387
+          }
+        ],
+        "baseline_us": 138.9080435037613,
+        "gems_us": 18.902968615293503,
+        "speedup": 7.352248986485387
+      },
+      {
+        "case": {
+          "name": "runtime_d3e9f659e9f4",
+          "B": 1,
+          "T": 130,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            65,
+            65
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 164.2017960548401,
+            "gems": 21.798359230160713,
+            "speedup": 7.532759430244029
+          },
+          {
+            "gems": 21.800391376018524,
+            "baseline": 164.43070769309998,
+            "speedup": 7.542557601694328
+          },
+          {
+            "baseline": 164.4572615623474,
+            "gems": 21.81023359298706,
+            "speedup": 7.540371397728981
+          },
+          {
+            "gems": 21.79914154112339,
+            "baseline": 164.254292845726,
+            "speedup": 7.5348973048257655
+          },
+          {
+            "baseline": 164.2630398273468,
+            "gems": 21.79781161248684,
+            "speedup": 7.535758302143001
+          }
+        ],
+        "baseline_us": 164.2630398273468,
+        "gems_us": 21.79914154112339,
+        "speedup": 7.535758302143001
+      },
+      {
+        "case": {
+          "name": "runtime_519170d9645e",
+          "B": 1,
+          "T": 133,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            133
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 176.59632861614227,
+            "gems": 18.975937739014626,
+            "speedup": 9.306329470772836
+          },
+          {
+            "gems": 18.970156088471413,
+            "baseline": 176.53781175613403,
+            "speedup": 9.306081137804659
+          },
+          {
+            "baseline": 176.53656005859375,
+            "gems": 18.978672102093697,
+            "speedup": 9.30183940735867
+          },
+          {
+            "gems": 18.973905593156815,
+            "baseline": 176.69406533241272,
+            "speedup": 9.312477310740901
+          },
+          {
+            "baseline": 176.67655646800995,
+            "gems": 18.986092880368233,
+            "speedup": 9.305577381362907
+          }
+        ],
+        "baseline_us": 176.59632861614227,
+        "gems_us": 18.975937739014626,
+        "speedup": 9.306081137804659
+      },
+      {
+        "case": {
+          "name": "runtime_d7a873a91152",
+          "B": 1,
+          "T": 192,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            64,
+            64,
+            64
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 205.31320571899414,
+            "gems": 19.260937348008156,
+            "speedup": 10.659564589686303
+          },
+          {
+            "gems": 19.267655909061432,
+            "baseline": 204.80351150035858,
+            "speedup": 10.629394279562625
+          },
+          {
+            "baseline": 204.7681212425232,
+            "gems": 19.275391474366188,
+            "speedup": 10.623292477086064
+          },
+          {
+            "gems": 19.26874928176403,
+            "baseline": 205.49844205379486,
+            "speedup": 10.664856293930756
+          },
+          {
+            "baseline": 205.52672445774078,
+            "gems": 19.260546192526817,
+            "speedup": 10.67086688006211
+          }
+        ],
+        "baseline_us": 205.31320571899414,
+        "gems_us": 19.267655909061432,
+        "speedup": 10.659564589686303
+      },
+      {
+        "case": {
+          "name": "runtime_dff4964b49da",
+          "B": 1,
+          "T": 195,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            65,
+            65,
+            65
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 202.72843539714813,
+            "gems": 28.533203527331352,
+            "speedup": 7.105000852882112
+          },
+          {
+            "gems": 28.535859659314156,
+            "baseline": 203.09390127658844,
+            "speedup": 7.117146765553924
+          },
+          {
+            "baseline": 203.0928134918213,
+            "gems": 28.538750484585762,
+            "speedup": 7.116387719970956
+          },
+          {
+            "gems": 28.53539027273655,
+            "baseline": 202.77531445026398,
+            "speedup": 7.106099216172304
+          },
+          {
+            "baseline": 202.7910202741623,
+            "gems": 28.52804772555828,
+            "speedup": 7.108478723291037
+          }
+        ],
+        "baseline_us": 202.7910202741623,
+        "gems_us": 28.53539027273655,
+        "speedup": 7.108478723291037
+      },
+      {
+        "case": {
+          "name": "runtime_e360a24e5ecf",
+          "B": 1,
+          "T": 255,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            255
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 309.5068633556366,
+            "gems": 24.562422186136246,
+            "speedup": 12.600828249354471
+          },
+          {
+            "gems": 24.568282067775726,
+            "baseline": 309.56047773361206,
+            "speedup": 12.600005034118281
+          },
+          {
+            "baseline": 309.5540702342987,
+            "gems": 24.56296794116497,
+            "speedup": 12.602470148386198
+          },
+          {
+            "gems": 24.56054650247097,
+            "baseline": 309.79469418525696,
+            "speedup": 12.613509807450308
+          },
+          {
+            "baseline": 309.78813767433167,
+            "gems": 24.66375008225441,
+            "speedup": 12.560463702445011
+          }
+        ],
+        "baseline_us": 309.56047773361206,
+        "gems_us": 24.56296794116497,
+        "speedup": 12.600828249354471
+      },
+      {
+        "case": {
+          "name": "runtime_3876756b0ea2",
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            1,
+            65,
+            190
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 264.00813460350037,
+            "gems": 26.89429745078087,
+            "speedup": 9.816509804231192
+          },
+          {
+            "gems": 26.90429612994194,
+            "baseline": 264.56499099731445,
+            "speedup": 9.833559284343389
+          },
+          {
+            "baseline": 264.56281542778015,
+            "gems": 26.900390163064003,
+            "speedup": 9.834906253182982
+          },
+          {
+            "gems": 26.897266507148743,
+            "baseline": 264.21913504600525,
+            "speedup": 9.823270887983401
+          },
+          {
+            "baseline": 264.23272490501404,
+            "gems": 26.886483654379845,
+            "speedup": 9.827715974378457
+          }
+        ],
+        "baseline_us": 264.23272490501404,
+        "gems_us": 26.897266507148743,
+        "speedup": 9.827715974378457
+      },
+      {
+        "case": {
+          "name": "runtime_96b26719619c",
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            1,
+            255
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 309.46141481399536,
+            "gems": 22.782733663916588,
+            "speedup": 13.583155532565522
+          },
+          {
+            "gems": 22.77749963104725,
+            "baseline": 308.83365869522095,
+            "speedup": 13.558716439369846
+          },
+          {
+            "baseline": 308.81163477897644,
+            "gems": 22.79195375740528,
+            "speedup": 13.549151514869196
+          },
+          {
+            "gems": 22.78062514960766,
+            "baseline": 309.47616696357727,
+            "speedup": 13.585060327850892
+          },
+          {
+            "baseline": 309.47837233543396,
+            "gems": 22.78507873415947,
+            "speedup": 13.582501774350373
+          }
+        ],
+        "baseline_us": 309.46141481399536,
+        "gems_us": 22.782733663916588,
+        "speedup": 13.582501774350373
+      },
+      {
+        "case": {
+          "name": "runtime_63ae191c5e14",
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            2,
+            254
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 357.1666479110718,
+            "gems": 22.716796025633812,
+            "speedup": 15.722580222494498
+          },
+          {
+            "gems": 22.71476574242115,
+            "baseline": 357.2692275047302,
+            "speedup": 15.728501519939037
+          },
+          {
+            "baseline": 357.23233222961426,
+            "gems": 22.727344185113907,
+            "speedup": 15.718173197887172
+          },
+          {
+            "gems": 22.77992106974125,
+            "baseline": 357.4195206165314,
+            "speedup": 15.690112337188673
+          },
+          {
+            "baseline": 357.5018048286438,
+            "gems": 22.729922086000443,
+            "speedup": 15.72824594277128
+          }
+        ],
+        "baseline_us": 357.2692275047302,
+        "gems_us": 22.727344185113907,
+        "speedup": 15.722580222494498
+      },
+      {
+        "case": {
+          "name": "runtime_45e0f6cfeb2e",
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            3,
+            253
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 308.23272466659546,
+            "gems": 22.822890430688858,
+            "speedup": 13.505420165893165
+          },
+          {
+            "gems": 22.82281219959259,
+            "baseline": 307.80157446861267,
+            "speedup": 13.48657526411698
+          },
+          {
+            "baseline": 307.7954649925232,
+            "gems": 22.82875031232834,
+            "speedup": 13.48279957428518
+          },
+          {
+            "gems": 22.82632887363434,
+            "baseline": 307.7622652053833,
+            "speedup": 13.48277539104703
+          },
+          {
+            "baseline": 307.77084827423096,
+            "gems": 22.74109423160553,
+            "speedup": 13.53368686395449
+          }
+        ],
+        "baseline_us": 307.7954649925232,
+        "gems_us": 22.822890430688858,
+        "speedup": 13.48657526411698
+      },
+      {
+        "case": {
+          "name": "runtime_602f298a1933",
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            64,
+            64,
+            64,
+            64
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 319.2904591560364,
+            "gems": 24.498282000422478,
+            "speedup": 13.033177557125441
+          },
+          {
+            "gems": 24.488983675837517,
+            "baseline": 319.2121982574463,
+            "speedup": 13.034930419444175
+          },
+          {
+            "baseline": 319.2388415336609,
+            "gems": 24.52874928712845,
+            "speedup": 13.014884607311904
+          },
+          {
+            "gems": 24.524608626961708,
+            "baseline": 320.11327147483826,
+            "speedup": 13.052737205474267
+          },
+          {
+            "baseline": 320.12906670570374,
+            "gems": 24.5107039809227,
+            "speedup": 13.060786297891251
+          }
+        ],
+        "baseline_us": 319.2904591560364,
+        "gems_us": 24.5107039809227,
+        "speedup": 13.034930419444175
+      },
+      {
+        "case": {
+          "name": "runtime_c1ba024b2419",
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            127,
+            129
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 312.75561451911926,
+            "gems": 26.57156251370907,
+            "speedup": 11.770313257180838
+          },
+          {
+            "gems": 26.51125006377697,
+            "baseline": 311.9889795780182,
+            "speedup": 11.768173089819596
+          },
+          {
+            "baseline": 312.0202422142029,
+            "gems": 26.55968815088272,
+            "speedup": 11.747888018927389
+          },
+          {
+            "gems": 26.5653133392334,
+            "baseline": 312.20006942749023,
+            "speedup": 11.75216965976504
+          },
+          {
+            "baseline": 312.1904730796814,
+            "gems": 26.56281180679798,
+            "speedup": 11.752915141302372
+          }
+        ],
+        "baseline_us": 312.1904730796814,
+        "gems_us": 26.56281180679798,
+        "speedup": 11.752915141302372
+      },
+      {
+        "case": {
+          "name": "runtime_3ae9cbcbae98",
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            128,
+            128
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 262.67001032829285,
+            "gems": 24.496249854564667,
+            "speedup": 10.722866230046495
+          },
+          {
+            "gems": 24.49890598654747,
+            "baseline": 262.57961988449097,
+            "speedup": 10.718014103514474
+          },
+          {
+            "baseline": 262.62256503105164,
+            "gems": 24.526484310626984,
+            "speedup": 10.707713413180093
+          },
+          {
+            "gems": 24.513360112905502,
+            "baseline": 262.33530044555664,
+            "speedup": 10.701727516638792
+          },
+          {
+            "baseline": 262.298583984375,
+            "gems": 24.50789138674736,
+            "speedup": 10.702617367000938
+          }
+        ],
+        "baseline_us": 262.57961988449097,
+        "gems_us": 24.50789138674736,
+        "speedup": 10.707713413180093
+      },
+      {
+        "case": {
+          "name": "runtime_df2b19d422cc",
+          "B": 1,
+          "T": 256,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            256
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 307.3641359806061,
+            "gems": 24.554140865802765,
+            "speedup": 12.517812684241813
+          },
+          {
+            "gems": 24.48226511478424,
+            "baseline": 307.3771893978119,
+            "speedup": 12.555096023863998
+          },
+          {
+            "baseline": 307.37632513046265,
+            "gems": 24.54531192779541,
+            "speedup": 12.522811933890559
+          },
+          {
+            "gems": 24.54179711639881,
+            "baseline": 307.6007664203644,
+            "speedup": 12.533750685063962
+          },
+          {
+            "baseline": 307.5481355190277,
+            "gems": 24.534374475479126,
+            "speedup": 12.53539746148436
+          }
+        ],
+        "baseline_us": 307.3771893978119,
+        "gems_us": 24.54179711639881,
+        "speedup": 12.533750685063962
+      },
+      {
+        "case": {
+          "name": "runtime_37c7365fe59f",
+          "B": 1,
+          "T": 257,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            257
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 357.6032817363739,
+            "gems": 26.454295963048935,
+            "speedup": 13.51777731056877
+          },
+          {
+            "gems": 26.447655633091927,
+            "baseline": 357.45251178741455,
+            "speedup": 13.515470586366892
+          },
+          {
+            "baseline": 357.4528098106384,
+            "gems": 26.520702987909317,
+            "speedup": 13.478255458522337
+          },
+          {
+            "gems": 26.52515657246113,
+            "baseline": 357.5957119464874,
+            "speedup": 13.481379873088079
+          },
+          {
+            "baseline": 357.5821816921234,
+            "gems": 26.505155488848686,
+            "speedup": 13.491042595187425
+          }
+        ],
+        "baseline_us": 357.5821816921234,
+        "gems_us": 26.505155488848686,
+        "speedup": 13.491042595187425
+      },
+      {
+        "case": {
+          "name": "runtime_316f59ced87b",
+          "B": 1,
+          "T": 386,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            129,
+            257
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 461.21570467948914,
+            "gems": 38.006797432899475,
+            "speedup": 12.13508466462505
+          },
+          {
+            "gems": 37.955235689878464,
+            "baseline": 462.01053261756897,
+            "speedup": 12.172511228556894
+          },
+          {
+            "baseline": 461.9687497615814,
+            "gems": 37.98078000545502,
+            "speedup": 12.163224391263972
+          },
+          {
+            "gems": 37.99109533429146,
+            "baseline": 461.1225128173828,
+            "speedup": 12.13764722390526
+          },
+          {
+            "baseline": 461.1106216907501,
+            "gems": 37.986014038324356,
+            "speedup": 12.13895780761657
+          }
+        ],
+        "baseline_us": 461.21570467948914,
+        "gems_us": 37.986014038324356,
+        "speedup": 12.13895780761657
+      },
+      {
+        "case": {
+          "name": "runtime_f22d03c8ddec",
+          "B": 1,
+          "T": 511,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            511
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 663.7055277824402,
+            "gems": 40.59562459588051,
+            "speedup": 16.349188721431585
+          },
+          {
+            "gems": 40.59148579835892,
+            "baseline": 663.6893153190613,
+            "speedup": 16.35045631529688
+          },
+          {
+            "baseline": 663.6828780174255,
+            "gems": 40.60531407594681,
+            "speedup": 16.344729578401868
+          },
+          {
+            "gems": 40.63945263624191,
+            "baseline": 663.7853980064392,
+            "speedup": 16.33352210591737
+          },
+          {
+            "baseline": 663.7990474700928,
+            "gems": 40.65711051225662,
+            "speedup": 16.326763980681356
+          }
+        ],
+        "baseline_us": 663.7055277824402,
+        "gems_us": 40.60531407594681,
+        "speedup": 16.344729578401868
+      },
+      {
+        "case": {
+          "name": "runtime_591a6724162f",
+          "B": 1,
+          "T": 512,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            512
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 518.1185007095337,
+            "gems": 40.49445316195488,
+            "speedup": 12.794801763030435
+          },
+          {
+            "gems": 40.52148386836052,
+            "baseline": 518.1517004966736,
+            "speedup": 12.787086035150118
+          },
+          {
+            "baseline": 518.154501914978,
+            "gems": 40.58625176548958,
+            "speedup": 12.766749314741203
+          },
+          {
+            "gems": 40.561795234680176,
+            "baseline": 518.1583762168884,
+            "speedup": 12.774542478185607
+          },
+          {
+            "baseline": 518.1270837783813,
+            "gems": 40.54288938641548,
+            "speedup": 12.779727632140293
+          }
+        ],
+        "baseline_us": 518.1517004966736,
+        "gems_us": 40.54288938641548,
+        "speedup": 12.779727632140293
+      },
+      {
+        "case": {
+          "name": "runtime_8fc751f26a65",
+          "B": 1,
+          "T": 513,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            513
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 585.8610272407532,
+            "gems": 43.94328221678734,
+            "speedup": 13.332209104238029
+          },
+          {
+            "gems": 43.977733701467514,
+            "baseline": 585.8993530273438,
+            "speedup": 13.322636336937768
+          },
+          {
+            "baseline": 585.8790874481201,
+            "gems": 43.95148530602455,
+            "speedup": 13.33013169791129
+          },
+          {
+            "gems": 43.96476596593857,
+            "baseline": 585.9282612800598,
+            "speedup": 13.327223480138713
+          },
+          {
+            "baseline": 585.8929753303528,
+            "gems": 43.92796754837036,
+            "speedup": 13.337584414421382
+          }
+        ],
+        "baseline_us": 585.8929753303528,
+        "gems_us": 43.95148530602455,
+        "speedup": 13.33013169791129
+      },
+      {
+        "case": {
+          "name": "runtime_9c9dbdb05c0d",
+          "B": 1,
+          "T": 514,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            128,
+            129,
+            257
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 667.9742932319641,
+            "gems": 46.05710878968239,
+            "speedup": 14.503174662618036
+          },
+          {
+            "gems": 45.990701764822006,
+            "baseline": 666.8578386306763,
+            "speedup": 14.499840468639066
+          },
+          {
+            "baseline": 666.8753623962402,
+            "gems": 46.045467257499695,
+            "speedup": 14.482975244162004
+          },
+          {
+            "gems": 46.080704778432846,
+            "baseline": 667.4690842628479,
+            "speedup": 14.484784628885352
+          },
+          {
+            "baseline": 667.465329170227,
+            "gems": 46.01296782493591,
+            "speedup": 14.506026468662299
+          }
+        ],
+        "baseline_us": 667.465329170227,
+        "gems_us": 46.045467257499695,
+        "speedup": 14.499840468639066
+      },
+      {
+        "case": {
+          "name": "runtime_f9f45d7e7063",
+          "B": 1,
+          "T": 1023,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            1023
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 1208.683967590332,
+            "gems": 71.08788937330246,
+            "speedup": 17.002670613037804
+          },
+          {
+            "gems": 71.1081251502037,
+            "baseline": 1208.7793350219727,
+            "speedup": 16.999173195308327
+          },
+          {
+            "baseline": 1208.8297605514526,
+            "gems": 71.02484256029129,
+            "speedup": 17.0198161231446
+          },
+          {
+            "gems": 71.0013285279274,
+            "baseline": 1209.1702222824097,
+            "speedup": 17.030247846796264
+          },
+          {
+            "baseline": 1209.246277809143,
+            "gems": 71.03773206472397,
+            "speedup": 17.02259127173955
+          }
+        ],
+        "baseline_us": 1208.8297605514526,
+        "gems_us": 71.03773206472397,
+        "speedup": 17.0198161231446
+      },
+      {
+        "case": {
+          "name": "runtime_d2e68a4bde50",
+          "B": 1,
+          "T": 1024,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            1024
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 1322.271227836609,
+            "gems": 71.1556226015091,
+            "speedup": 18.582807366350917
+          },
+          {
+            "gems": 71.17101550102234,
+            "baseline": 1322.2767114639282,
+            "speedup": 18.57886531694822
+          },
+          {
+            "baseline": 1322.2084045410156,
+            "gems": 71.15351408720016,
+            "speedup": 18.58247511037362
+          },
+          {
+            "gems": 71.080781519413,
+            "baseline": 1322.3507404327393,
+            "speedup": 18.60349186047694
+          },
+          {
+            "baseline": 1322.4369287490845,
+            "gems": 71.14109396934509,
+            "speedup": 18.588931585996225
+          }
+        ],
+        "baseline_us": 1322.2767114639282,
+        "gems_us": 71.15351408720016,
+        "speedup": 18.582807366350917
+      },
+      {
+        "case": {
+          "name": "runtime_4ba35ca371d4",
+          "B": 1,
+          "T": 1025,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            1025
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 1167.9253578186035,
+            "gems": 75.0574991106987,
+            "speedup": 15.560408642127637
+          },
+          {
+            "gems": 75.00578463077545,
+            "baseline": 1168.2549715042114,
+            "speedup": 15.575531637394104
+          },
+          {
+            "baseline": 1168.3292388916016,
+            "gems": 74.98398423194885,
+            "speedup": 15.581050418414614
+          },
+          {
+            "gems": 75.04234462976456,
+            "baseline": 1167.8882837295532,
+            "speedup": 15.563056957928866
+          },
+          {
+            "baseline": 1167.9106950759888,
+            "gems": 75.06765425205231,
+            "speedup": 15.55810830526996
+          }
+        ],
+        "baseline_us": 1167.9253578186035,
+        "gems_us": 75.04234462976456,
+        "speedup": 15.563056957928866
+      },
+      {
+        "case": {
+          "name": "runtime_b09999b0b474",
+          "B": 1,
+          "T": 1026,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            1,
+            1025
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 1035.1349115371704,
+            "gems": 73.6357793211937,
+            "speedup": 14.057499235826517
+          },
+          {
+            "gems": 73.67687672376633,
+            "baseline": 1033.653736114502,
+            "speedup": 14.029554211288533
+          },
+          {
+            "baseline": 1033.6296558380127,
+            "gems": 73.64922016859055,
+            "speedup": 14.034495592375988
+          },
+          {
+            "gems": 73.63499701023102,
+            "baseline": 1035.9315872192383,
+            "speedup": 14.068467838401672
+          },
+          {
+            "baseline": 1035.8792543411255,
+            "gems": 73.65226745605469,
+            "speedup": 14.064458435840994
+          }
+        ],
+        "baseline_us": 1035.1349115371704,
+        "gems_us": 73.64922016859055,
+        "speedup": 14.057499235826517
+      },
+      {
+        "case": {
+          "name": "runtime_349ecc8a0ba4",
+          "B": 1,
+          "T": 1026,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            513,
+            513
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 1170.0489521026611,
+            "gems": 78.57327908277512,
+            "speedup": 14.891181401122918
+          },
+          {
+            "gems": 78.61187309026718,
+            "baseline": 1168.9510345458984,
+            "speedup": 14.86990436169399
+          },
+          {
+            "baseline": 1168.9637899398804,
+            "gems": 78.62343639135361,
+            "speedup": 14.86787965004839
+          },
+          {
+            "gems": 78.66805046796799,
+            "baseline": 1167.2364473342896,
+            "speedup": 14.837490447402967
+          },
+          {
+            "baseline": 1167.208194732666,
+            "gems": 78.59523594379425,
+            "speedup": 14.850877164709711
+          }
+        ],
+        "baseline_us": 1168.9510345458984,
+        "gems_us": 78.61187309026718,
+        "speedup": 14.86787965004839
+      },
+      {
+        "case": {
+          "name": "runtime_9bab3bb72bb1",
+          "B": 1,
+          "T": 2049,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            2049
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 2641.0489082336426,
+            "gems": 136.440709233284,
+            "speedup": 19.356751537534315
+          },
+          {
+            "gems": 136.50734722614288,
+            "baseline": 2642.137289047241,
+            "speedup": 19.355275322068806
+          },
+          {
+            "baseline": 2641.833782196045,
+            "gems": 136.50156557559967,
+            "speedup": 19.353871664811777
+          },
+          {
+            "gems": 136.5428864955902,
+            "baseline": 2640.8748626708984,
+            "speedup": 19.34099190700929
+          },
+          {
+            "baseline": 2640.8324241638184,
+            "gems": 136.4874243736267,
+            "speedup": 19.348540250380044
+          }
+        ],
+        "baseline_us": 2641.0489082336426,
+        "gems_us": 136.50156557559967,
+        "speedup": 19.353871664811777
+      },
+      {
+        "case": {
+          "name": "runtime_0324e9aa6698",
+          "B": 1,
+          "T": 3139,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            65,
+            1025,
+            2049
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 3711.1270427703857,
+            "gems": 206.63195848464966,
+            "speedup": 17.960082602837446
+          },
+          {
+            "gems": 206.66508376598358,
+            "baseline": 3711.005687713623,
+            "speedup": 17.956616667360056
+          },
+          {
+            "baseline": 3710.8540534973145,
+            "gems": 206.6180408000946,
+            "speedup": 17.959971158024917
+          },
+          {
+            "gems": 206.6175788640976,
+            "baseline": 3709.277868270874,
+            "speedup": 17.952382796580178
+          },
+          {
+            "baseline": 3709.476947784424,
+            "gems": 206.69491589069366,
+            "speedup": 17.94662888440906
+          }
+        ],
+        "baseline_us": 3710.8540534973145,
+        "gems_us": 206.63195848464966,
+        "speedup": 17.956616667360056
+      },
+      {
+        "case": {
+          "name": "runtime_a0163de2177d",
+          "B": 1,
+          "T": 4096,
+          "H": 32,
+          "D": 128,
+          "chunk": 64,
+          "lengths": [
+            4096
+          ]
+        },
+        "correctness": "passed",
+        "gems_config": {
+          "BD": 128,
+          "num_warps": 4,
+          "num_ctas": 1,
+          "num_stages": 1
+        },
+        "rounds": [
+          {
+            "baseline": 5276.985168457031,
+            "gems": 257.50163197517395,
+            "speedup": 20.493016405293275
+          },
+          {
+            "gems": 257.50499963760376,
+            "baseline": 5276.939868927002,
+            "speedup": 20.492572479576836
+          },
+          {
+            "baseline": 5276.777744293213,
+            "gems": 257.486492395401,
+            "speedup": 20.49341577184599
+          },
+          {
+            "gems": 257.4639916419983,
+            "baseline": 5277.465343475342,
+            "speedup": 20.497877430618015
+          },
+          {
+            "baseline": 5276.890754699707,
+            "gems": 257.50187039375305,
+            "speedup": 20.492630778295595
+          }
+        ],
+        "baseline_us": 5276.939868927002,
+        "gems_us": 257.50163197517395,
+        "speedup": 20.493016405293275
+      }
+    ],
+    "geomean_speedup": 10.401820443725699,
+    "min_speedup": 1.7347191649670228
+  },
+  "functional_full": {
+    "snapshot": "30b3c73",
+    "exit_code": 0,
+    "log": "........................................................................ [ 33%]\n........................................................................ [ 66%]\n...........s...........................................................  [100%]\n=============================== warnings summary ===============================\ntests/test_fused_kda_gate_chunk_cumsum.py::test_reference_and_upstream[False-False-dtype0-single]\n  /root/elzat/FlagGems-vllm-chunk-cumsum/tools/fused_kda_gate_chunk_cumsum/reference.py:129: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)\n    y = torch.empty_like(gate)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n214 passed, 1 skipped, 1 deselected, 1 warning in 2464.43s (0:41:04)\n"
+  },
+  "benchmark_smoke": "[base-data] 未指定 --base-data，'vs Base' 列关闭。\n.                                                                        [100%]\n=============================== warnings summary ===============================\nbenchmark/test_fused_kda_gate_chunk_cumsum.py::test_fused_kda_gate_chunk_cumsum[True]\n  /root/elzat/FlagGems-vllm-chunk-cumsum/src/flaggems_vllm/runtime/backend/_ascend/ops/fused_kda_gate_chunk_cumsum.py:301: UserWarning: Cannot create tensor with interal format while allow_internel_format=False, tensor will be created with base format. (Triggered internally at ../torch_npu/csrc/aten/common/TensorFactories.cpp:340.)\n    y = torch.empty_like(raw_g, dtype=dtype)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n1 passed, 1 deselected, 1 warning in 32.57s\n",
+  "interpretation": {
+    "date": "2026-11-27",
+    "acceptance": "All 38 captured safe-gate contracts, five paired rounds, 256 calls per native NPU Graph, physical device 6.",
+    "functional_scope": "214 passed, one HCU/MetaX-only grid test skipped, public-package integration deselected because of unrelated chunk_kda TLE dsa import failure. Three added forced-int64 tests pass separately.",
+    "functional_snapshot_note": "Full run imported source at 30b3c73. Later index fixes affect only the INT64_INDEX branch, covered by the three final targeted tests. All 38 active cases are checked again against independent CPU math before capture and after replay with final production source.",
+    "baseline_scope": "Pinned native vLLM-Ascend gate plus chunk-local cumsum plus ln2 scaling; full fused operation, not the old standalone gate, FLA-NPU kernel, or NVIDIA Triton compiled on NPU.",
+    "native_provenance": "Unmodified pinned source and build; verified real resolver destinations, API/binding hashes and eight device-kernel artifacts.",
+    "public_package_import_verified": false,
+    "diagnostic_five_cases_status": "Earlier diagnostic on physical device 3, not included in the final full38 aggregate.",
+    "numerics": "Finite synthetic benchmark values at actual model dimensions. FP32 rtol=1e-4, atol=1e-5. Native row-before-sum scaling and candidate post-scan scaling have different floating-point orders.",
+    "optimization_attribution": "Overall implementation comparison only; individual optimization contributions are not claimed without ablations."
+  }
+}
