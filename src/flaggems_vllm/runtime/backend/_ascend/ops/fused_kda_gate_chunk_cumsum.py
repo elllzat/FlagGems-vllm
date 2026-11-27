@@ -108,6 +108,8 @@ def _ascend_scan_kernel(
     if INT64_INDEX:
         i_t = i_t.to(tl.int64)
     i_b, i_h = i_bh // H, i_bh % H
+    if INT64_INDEX:
+        i_b = i_b.to(tl.int64)
     if IS_VARLEN:
         if AUTO_INDICES:
             # Rectangular sequence/chunk grid: no host tensor reads or index
@@ -119,8 +121,8 @@ def _ascend_scan_kernel(
                 tl.load(chunk_indices + i_t * 2 + 1).to(i_t.dtype),
             )
         bos, eos = (
-            tl.load(cu_seqlens + i_n).to(tl.int32),
-            tl.load(cu_seqlens + i_n + 1).to(tl.int32),
+            tl.load(cu_seqlens + i_n).to(i_t.dtype),
+            tl.load(cu_seqlens + i_n + 1).to(i_t.dtype),
         )
         T = eos - bos
         if AUTO_INDICES:
