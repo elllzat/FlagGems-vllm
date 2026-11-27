@@ -65,7 +65,7 @@ def test_fused_kda_gate_chunk_cumsum(safe):
             root / "binding-build",
         )
 
-        def reference(g, a, **kwargs):
+        def native_reference(g, a, **kwargs):
             return native(
                 g,
                 kwargs["chunk_size"],
@@ -77,6 +77,8 @@ def test_fused_kda_gate_chunk_cumsum(safe):
                 lower_bound=kwargs["lower_bound"],
                 layout="BSND",
             )
+
+        reference = native_reference
 
     def gems(g, a, **kwargs):
         kwargs.pop("_host_cu", None)
