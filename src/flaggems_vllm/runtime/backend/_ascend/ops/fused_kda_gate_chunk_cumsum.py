@@ -12,8 +12,8 @@ import triton.language as tl
 
 from flaggems_vllm import runtime
 from flaggems_vllm.ops.fused_kda_gate_chunk_cumsum import (
-    RCP_LN2,
     _FLOAT_DTYPES,
+    RCP_LN2,
     _check_tensor,
 )
 from flaggems_vllm.utils import libentry, libtuner

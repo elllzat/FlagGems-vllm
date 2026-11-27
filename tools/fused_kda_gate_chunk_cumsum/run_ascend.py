@@ -17,8 +17,8 @@ import torch_npu  # noqa: F401
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from fused_kda_gate_chunk_cumsum.ascend_reference import load_reference
-from fused_kda_gate_chunk_cumsum.run_portable import (
+from fused_kda_gate_chunk_cumsum.ascend_reference import load_reference  # noqa: E402
+from fused_kda_gate_chunk_cumsum.run_portable import (  # noqa: E402
     capture,
     latency,
     load_operator,

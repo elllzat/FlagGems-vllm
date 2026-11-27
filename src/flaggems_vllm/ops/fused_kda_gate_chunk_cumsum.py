@@ -22,6 +22,7 @@ Torch compute/copy fallback are used.
 import math
 import numbers
 import os
+import statistics
 
 import torch
 import triton
@@ -51,6 +52,37 @@ _SCAN_CONFIG = (
     if runtime.device.vendor_name == "hygon"
     else "fused_kda_gate_chunk_cumsum"
 )
+
+
+def _musa_graph_bench(call, quantiles=None):
+    """Time this operator's configurations with native MUSA Graph replay."""
+    api = runtime.torch_device_fn
+    for _ in range(5):
+        call()
+    api.synchronize()
+    stream = api.Stream()
+    stream.wait_stream(api.current_stream())
+    graph = api.MUSAGraph()
+    with api.stream(stream):
+        graph.capture_begin()
+        for _ in range(32):
+            call()
+        graph.capture_end()
+    stream.synchronize()
+    for _ in range(3):
+        graph.replay()
+    samples = []
+    for _ in range(5):
+        begin, end = api.Event(enable_timing=True), api.Event(enable_timing=True)
+        begin.record()
+        graph.replay()
+        end.record()
+        end.synchronize()
+        samples.append(begin.elapsed_time(end) / 32)
+    if quantiles is None:
+        return statistics.median(samples)
+    samples.sort()
+    return [samples[round(q * (len(samples) - 1))] for q in quantiles]
 
 
 @triton.jit
@@ -98,6 +130,7 @@ def _program_coordinates(
         "TUNE_N",
     ],
     use_cuda_graph=True,
+    do_bench=_musa_graph_bench if runtime.device.vendor_name == "mthreads" else None,
 )
 @triton.jit(do_not_specialize=["T"])
 def kda_gate_cumsum_fwd_kernel(
