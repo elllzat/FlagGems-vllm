@@ -263,6 +263,56 @@ def test_top_level_integration():
     assert flaggems_vllm.ops.fused_kda_gate_chunk_cumsum is port
 
 
+@pytest.mark.skipif(flaggems_vllm.vendor_name != "ascend", reason="Ascend index width")
+@pytest.mark.parametrize("layout", ["dense", "indexed", "rectangular"])
+def test_ascend_int64_index_branch(layout):
+    # Compile/exercise the large-offset arithmetic without allocating a multi-GB
+    # tensor. Dense batch bases and nonzero packed sequence bases both matter.
+    case = (
+        Case("wide_index_dense", B=2, T=65, H=2, D=80)
+        if layout == "dense"
+        else Case("wide_index_packed", T=65, H=2, D=80, lengths=(1, 64))
+    )
+    args, kwargs = make_inputs(case, safe=True)
+    module = importlib.import_module(port.__module__)
+    automatic = layout == "rectangular"
+    indices = None if automatic else kwargs.get("chunk_indices")
+    chunks = (case.T + case.chunk - 1) // case.chunk
+    if indices is not None:
+        chunks = indices.shape[0]
+    batches = len(case.lengths) if automatic else case.B
+    output = torch.empty_like(args[0], dtype=torch.float32)
+    with flaggems_vllm.runtime.torch_device_fn.device(args[0].device):
+        module._ascend_scan_kernel[
+            lambda meta: (triton.cdiv(case.D, meta["BD"]), chunks, batches * case.H)
+        ](
+            g=args[0],
+            A=args[1].view(-1),
+            y=output,
+            g_bias=kwargs["g_bias"],
+            cu_seqlens=kwargs.get("cu_seqlens"),
+            chunk_indices=indices,
+            cumsum_scale=module.RCP_LN2,
+            beta=1.0,
+            threshold=20.0,
+            SAFE_GATE=True,
+            LOWER_BOUND=-5.0,
+            T=case.T,
+            H=case.H,
+            D=case.D,
+            BT=case.chunk,
+            ROWS=case.chunk,
+            AUTO_INDICES=automatic,
+            INT64_INDEX=True,
+            TUNE_T=case.T,
+            TUNE_NT=chunks,
+            TUNE_B=case.B,
+            TUNE_N=len(case.lengths) if case.lengths else case.B,
+            multibuffer=False,
+        )
+    assert_close(output, torch_reference(*args, **kwargs))
+
+
 def test_workload_keys_survive_cached_launches():
     # Exercise different T/NT/sequence counts, including repeated warm calls.
     cases = [
