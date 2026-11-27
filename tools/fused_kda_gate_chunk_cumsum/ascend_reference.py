@@ -3,11 +3,42 @@
 """Load only the pinned native operator, without importing all vLLM models."""
 
 import argparse
+import ctypes
 import hashlib
 import json
 import os
 import subprocess
 from pathlib import Path
+
+
+def _verify_api_resolution(binding, expected_api):
+    """Check the pinned adapter's real resolver, not just a file on disk."""
+
+    class DlInfo(ctypes.Structure):
+        _fields_ = [
+            ("filename", ctypes.c_char_p),
+            ("base", ctypes.c_void_p),
+            ("symbol", ctypes.c_char_p),
+            ("address", ctypes.c_void_p),
+        ]
+
+    handle = ctypes.CDLL(str(binding))
+    # Itanium ABI symbol exported by this pinned upstream C++ adapter.
+    resolve = handle._Z16GetOpApiFuncAddrPKc
+    resolve.argtypes, resolve.restype = [ctypes.c_char_p], ctypes.c_void_p
+    dladdr = ctypes.CDLL(None).dladdr
+    dladdr.argtypes = [ctypes.c_void_p, ctypes.POINTER(DlInfo)]
+    dladdr.restype = ctypes.c_int
+    entries = []
+    for name in ("aclnnKdaGateCumsumVllm", "aclnnKdaGateCumsumVllmGetWorkspaceSize"):
+        address, info = resolve(name.encode()), DlInfo()
+        if not address or not dladdr(address, ctypes.byref(info)):
+            raise RuntimeError(f"Cannot identify the resolved native entry: {name}")
+        actual = Path(info.filename.decode()).resolve()
+        if actual != expected_api.resolve():
+            raise RuntimeError(f"Native entry {name} resolves to unexpected {actual}")
+        entries.append({"symbol": name, "library": str(actual)})
+    return entries
 
 
 def load_reference(source, install, build):
@@ -73,6 +104,7 @@ def load_reference(source, install, build):
         "binding_sha256": hashlib.sha256(library.read_bytes()).hexdigest(),
         "native_api": str(vendors[0]),
         "native_api_sha256": hashlib.sha256(vendors[0].read_bytes()).hexdigest(),
+        "resolved_entrypoints": _verify_api_resolution(library, vendors[0]),
         "kernel_artifacts": [
             {
                 "path": str(p.relative_to(vendor)),
