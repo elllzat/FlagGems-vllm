@@ -92,6 +92,7 @@ def _ascend_scan_kernel(
     D: tl.constexpr,
     BT: tl.constexpr,
     BD: tl.constexpr,
+    ROWS: tl.constexpr,
     HAS_BIAS: tl.constexpr,
     IS_VARLEN: tl.constexpr,
     AUTO_INDICES: tl.constexpr,
@@ -100,7 +101,7 @@ def _ascend_scan_kernel(
     TUNE_B: tl.constexpr,
     TUNE_N: tl.constexpr,
 ):
-    BLOCK_T: tl.constexpr = triton.next_power_of_2(min(TUNE_T, BT))
+    BLOCK_T: tl.constexpr = ROWS
     i_d = tl.program_id(0)
     i_t, i_bh = tl.program_id(1), tl.program_id(2)
     if (TUNE_T + BT) * H * D * TUNE_B >= 2**31:
@@ -323,6 +324,7 @@ def fused_kda_gate_chunk_cumsum(
             H=H,
             D=D,
             BT=chunk_size,
+            ROWS=min(chunk_size, triton.next_power_of_2(T)),
             AUTO_INDICES=auto_indices,
             # Cache-only metadata: T is do_not_specialize, and LibEntry's hot
             # launch bypasses the tuner. Both caches must distinguish workload.
