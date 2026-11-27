@@ -56,6 +56,9 @@ _SCAN_CONFIG = (
 
 def _musa_graph_bench(call, quantiles=None):
     """Time this operator's configurations with native MUSA Graph replay."""
+    # Match the acceptance graph length. A short capture can rank MUSA scan
+    # configurations differently from a sustained replay of this operator.
+    repeats = 256
     api = runtime.torch_device_fn
     for _ in range(5):
         call()
@@ -65,20 +68,20 @@ def _musa_graph_bench(call, quantiles=None):
     graph = api.MUSAGraph()
     with api.stream(stream):
         graph.capture_begin()
-        for _ in range(32):
+        for _ in range(repeats):
             call()
         graph.capture_end()
     stream.synchronize()
-    for _ in range(3):
+    for _ in range(10):
         graph.replay()
     samples = []
-    for _ in range(5):
+    for _ in range(7):
         begin, end = api.Event(enable_timing=True), api.Event(enable_timing=True)
         begin.record()
         graph.replay()
         end.record()
         end.synchronize()
-        samples.append(begin.elapsed_time(end) / 32)
+        samples.append(begin.elapsed_time(end) / repeats)
     if quantiles is None:
         return statistics.median(samples)
     samples.sort()
